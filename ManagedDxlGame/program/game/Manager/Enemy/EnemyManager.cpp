@@ -8,8 +8,7 @@
 
 
 EnemyManager::EnemyManager(const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision)
-	: _player_ref(player), _camera_ref(camera), _collision_ref(collision) {
-
+	: _player_ref(player), _mainCamera_ref(camera), _collision_ref(collision) {
 
 
 	// 敵のロード
@@ -34,7 +33,6 @@ EnemyManager::EnemyManager(const Shared<Player>& player, const Shared<dxe::Camer
 
 	// プレイヤークラスでエネミーのリストを参照する変数
 	_player_ref->SetEnemiesListRef_ClassP(_enemy_zakoBox_list);
-
 }
 
 
@@ -65,8 +63,7 @@ void EnemyManager::NewEnemy() {
 	for (int i = 0; i < _sEnemy_zakoBox_info._maxSpawnCount; i++) {
 
 
-		_enemy_zakoBox_list.emplace_back(std::make_shared<EnemyZakoBox>(_enemyData[0], _player_ref, _camera_ref));
-
+		_enemy_zakoBox_list.emplace_back(std::make_shared<EnemyZakoBox>(_enemyData[0], _player_ref, _mainCamera_ref));
 	}
 
 }
@@ -132,7 +129,7 @@ void EnemyManager::Render() const {
 
 
 	for (const auto enemy : _enemy_zakoBox_list) {
-		enemy->Render(_camera_ref);
+		enemy->Render(_mainCamera_ref);
 	}
 }
 

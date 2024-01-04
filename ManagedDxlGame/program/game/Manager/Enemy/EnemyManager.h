@@ -50,7 +50,7 @@ private:
 	// QÆ
 	Shared<Player> _player_ref;
 
-	Shared<dxe::Camera> _camera_ref;
+	Shared<dxe::Camera> _mainCamera_ref;
 
 	Shared<Collision> _collision_ref;
 

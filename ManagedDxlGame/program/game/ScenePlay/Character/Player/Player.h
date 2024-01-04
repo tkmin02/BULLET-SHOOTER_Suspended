@@ -34,7 +34,7 @@ public:
 	void NormalizeCameraSpeed();
 
 
-	void ShotStraightBullet();
+	void ShotPlayerBullet();
 
 	void AdjustPlayerVelocity();
 

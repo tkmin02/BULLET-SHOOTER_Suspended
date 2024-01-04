@@ -30,7 +30,7 @@ Player::Player(Shared<dxe::Camera> camera_ref) {
 
 void Player::SetEnemiesListRef_ClassP(std::list<Shared<EnemyBase>> enemies_list_ref) {
 
-	_enemies_list_ref = std::move(enemies_list_ref);
+	_enemies_list_ref = enemies_list_ref;
 }
 
 
@@ -235,59 +235,52 @@ void Player::ActivateDarkSoulsCamera() {
 
 	for (auto it_eneList_ref = _enemies_list_ref.begin(); it_eneList_ref != _enemies_list_ref.end(); it_eneList_ref++) {
 
-		float dis_player_enemy = ((*it_eneList_ref)->_mesh->pos_ - _mesh->pos_).length();
+		tnl::Vector3 player_pos = _mesh->pos_;
+
+		tnl::Vector3 target_enemy_pos = (*it_eneList_ref)->_mesh->pos_;
+		float dis_player_enemy = (target_enemy_pos - player_pos).length();
 
 		if (dis_player_enemy < 500) {
 
-			if (_mainCamera_ref->follow && (*it_eneList_ref) != nullptr) {
+			if (_mainCamera_ref->follow) {
 
-				tnl::Vector3 _camera_offset = { 0, 110, -150 };
-
+				tnl::Vector3 tmp{};
+				tmp.y = player_pos.y - 40;
 
 				// カメラをプレイヤーと敵の中間地点に固定
-				_mainCamera_ref->target_ = (_mesh->pos_ + (*it_eneList_ref)->_mesh->pos_) / 2;
+				_mainCamera_ref->target_ = (tmp + target_enemy_pos) / 2;
 
-
+				tnl::Vector3 cameraOffset = { 0, 0, -200 };
+				tnl::Vector3 cameraPos = player_pos + cameraOffset;
 				// カメラの位置 = プレイヤー座標 + (normalized(プレイヤー座標 - 敵座標) * カメラとプレイヤーの差分)
 				// ただし、単純にプレイヤーの座標を使うとプレイヤーとエネミーが重なってしまうため、差分を使う
 
 				 //左方向
 				if (tnl::Input::IsKeyDown(eKeys::KB_A)) {
 
-					tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
-
-					tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
-
-					tnl::Vector3 local_axis_x = tnl::Vector3::Cross({ 0,1,0 }, xz);
-
-					q *= tnl::Quaternion::RotationAxis(local_axis_x, _mainCamera_ref->axis_x_angle_);
-
-					_mesh->pos_ = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, 0, -to_target_distance_ }, q);
-
-					_mainCamera_ref->axis_y_angle_ += tnl::ToRadian(1);
+					_mainCamera_ref->axis_y_angle_ += tnl::ToRadian(0.75);
 				}
 
 				// 右方向
 				if (tnl::Input::IsKeyDown(eKeys::KB_D)) {
 
-					tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
-
-					tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
-
-					tnl::Vector3 local_axis_x = tnl::Vector3::Cross({ 0,1,0 }, xz);
-
-					q *= tnl::Quaternion::RotationAxis(local_axis_x, _mainCamera_ref->axis_x_angle_);
-
-					_mesh->pos_ = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, 0, -to_target_distance_ }, q);
-
-					_mainCamera_ref->axis_y_angle_ -= tnl::ToRadian(1);
+					_mainCamera_ref->axis_y_angle_ -= tnl::ToRadian(0.75);
 				}
 
 
+				tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
+				tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
 
+				tnl::Vector3 local_axis_x = tnl::Vector3::Cross({ 0,1,0 }, xz);
+				q *= tnl::Quaternion::RotationAxis(local_axis_x, _mainCamera_ref->axis_x_angle_);
+
+				_mesh->pos_ = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, -30, -to_target_distance_ }, q);
+				_mesh->rot_ = tnl::Quaternion::LookAt(player_pos, target_enemy_pos, local_axis_x);
+
+				_mainCamera_ref->pos_ = cameraPos;
 
 				// カメラの動きの遅延処理
-				tnl::Vector3 fix_pos = _mesh->pos_ + tnl::Vector3::TransformCoord({ _player_behind_cameraX, 100, -150 }, _mesh->rot_);
+				tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ _player_behind_cameraX, 100, -150 }, _mesh->rot_);
 				_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
 
 				// 追従ポインターON
@@ -297,16 +290,15 @@ void Player::ActivateDarkSoulsCamera() {
 
 				tnl::Vector3 _camera_offset = { 0, -50, 20 };
 
-
 				// 敵にカメラを固定しない場合
-				_mainCamera_ref->target_ = _mesh->pos_;
+				_mainCamera_ref->target_ = player_pos;
 				_mainCamera_ref->target_ -= _camera_offset;
 
 				ControlRotationByMouse((*it_eneList_ref));
 
 
 				// カメラの動きの遅延処理
-				tnl::Vector3 fix_pos = _mesh->pos_ + tnl::Vector3::TransformCoord({ 0, 100, -150 }, _mesh->rot_);
+				tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ 0, 100, -150 }, _mesh->rot_);
 				_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
 
 				// 追従ポインターOFF
@@ -367,7 +359,7 @@ void Player::ControlRotationByMouse(Shared<EnemyBase> enemy) {
 	// 左右視点
 	rot_y_ *= tnl::Quaternion::RotationAxis({ 0, 1, 0 }, tnl::ToRadian(vel.x * 0.05f));
 
-	//// 上下視点も有効化する場合はアンコメントしてください
+	//// 上下視点も有効化する場合はアンコメント
 	//tnl::Vector3 forward = tnl::Vector3::TransformCoord({ 0, 0, 1 }, rot_y_);
 	//rot_x_ *= tnl::Quaternion::RotationAxis(tnl::Vector3::Cross({ 0, 1, 0 }, forward), tnl::ToRadian(vel.y * 0.01f));
 }
@@ -398,7 +390,7 @@ tnl::Quaternion Player::ClampRotation(tnl::Quaternion quaternion) {
 
 
 
-void Player::ShotStraightBullet() {
+void Player::ShotPlayerBullet() {
 
 	tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
 
@@ -468,7 +460,7 @@ void Player::Update(float delta_time) {
 
 	MoveForward(delta_time);
 
-	ShotStraightBullet();
+	ShotPlayerBullet();
 
 
 	AdjustPlayerVelocity();
