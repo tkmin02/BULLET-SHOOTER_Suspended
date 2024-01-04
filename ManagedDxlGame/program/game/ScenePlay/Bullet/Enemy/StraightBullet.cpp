@@ -5,18 +5,17 @@
 
 StraightBullet::StraightBullet(Shared<StraightBullet> straightBullet) {
 
-	_straight_bullets_e_ref = straightBullet;
 
-	_mesh = dxe::Mesh::CreateSphere(20);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/enemyshot.png"));
+	_mesh = dxe::Mesh::CreateSphere(10);
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/enemyshot.png"));
 }
 
 
 
 StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3& move_dir, const Shared<Player>& player, const float& speed) {
 
-	_mesh = dxe::Mesh::CreateSphere(20);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/enemyshot.png"));
+	_mesh = dxe::Mesh::CreateSphere(10);
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/enemyshot.png"));
 	_mesh->pos_ = spawn_pos;
 	_move_dir = move_dir;
 
@@ -26,14 +25,13 @@ StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3
 
 
 
-void StraightBullet::Render(Shared<dxe::Camera> _mainCamera) {
+ void StraightBullet::Render(Shared<dxe::Camera> _mainCamera) {
 	_mesh->render(_mainCamera);
 }
 
 
 void StraightBullet::Update(float delta_time) {
 
-	_move_dir;
 	// ’e‚ÌŽõ–½‚Í‹——£‚ÅŠÇ—
 	static tnl::Vector3 start = _mesh->pos_;
 
@@ -43,10 +41,10 @@ void StraightBullet::Update(float delta_time) {
 	float dy = _mesh->pos_.y - start.y;
 	float dz = _mesh->pos_.z - start.z;
 
-	float current_distance = sqrt(dx * dx + dy * dy + dz + dz);
+	float current_distance = sqrt(dx * dx + dy * dy + dz * dz);
 
 	// ”ò‹——£‚ª1000‚ð’´‚¦‚½‚çÁ‹Ž
-	if (current_distance > 1000) {
+	if (abs(current_distance) > 600) {
 
 		_isActive = false;
 	}

@@ -15,7 +15,7 @@ EnemyBase::EnemyBase(const EnemyInfo& data, const Shared<Player>& player, const 
 
 
 	_player_ref = player;
-	_camera_ref = camera;
+	_mainCamera_ref = camera;
 }
 
 

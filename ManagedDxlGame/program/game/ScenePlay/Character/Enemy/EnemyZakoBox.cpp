@@ -57,101 +57,63 @@ float EnemyZakoBox::GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<P
 	float angle = atan2(dy, dx);
 
 	return angle;
-
 }
 
 
 
-bool EnemyZakoBox::SeqIdle(const float delta_time) {
-
-
-	if (GetDistanceToPlayer() < _IDLE_DISTANCE) {
-
-		tnl_sequence_.change(&EnemyZakoBox::SeqChasePlayer);
-		TNL_SEQ_CO_END;
-
-	}
-
-	if (GetDistanceToPlayer() < _ATTACK_DISTANCE) {
-
-		tnl_sequence_.change(&EnemyZakoBox::SeqAttack);
-		TNL_SEQ_CO_END;
-
-	}
-
-	TNL_SEQ_CO_END;
-}
-
-
-
-bool EnemyZakoBox::SeqChasePlayer(const float delta_time) {
+void EnemyZakoBox::DoRoutineMoves(float delta_time) {
 
 	LookAtPlayer(delta_time);
 
-	prev_pos = _mesh->pos_;
+	// 距離 250～270内でプレイヤー追跡
+	if (GetDistanceToPlayer() < _IDLE_DISTANCE && GetDistanceToPlayer() > _ATTACK_DISTANCE) {
 
+		ChasePlayer(delta_time);
+	}
+	// 250以内で攻撃
+	else if (GetDistanceToPlayer() < _ATTACK_DISTANCE) {
 
-	//_mover->forward;
+		AttackPlayer(delta_time);
+	}
+	// アイドル状態
+	else {
 
-
-
-	//プレイヤー追跡	 一番下に持ってくと画面が止まる
-	for (auto it_me = _enemy_list_ref.begin(); it_me != _enemy_list_ref.end(); it_me++) {
-
-		float offSet = 20.0f;
-		float randVal_X = GetRandomValue_Mt19337();
-		float randVal_Y = GetRandomValue_Mt19337();
-		float randVal_Z = GetRandomValue_Mt19337();
-
-
-		// 移動
-		tnl::Vector3 direction = (_player_ref->GetPos() * 40 * delta_time) - (*it_me)->_mesh->pos_;
-		direction.x += randVal_X * offSet;
-		direction.y += randVal_Y * offSet;
-		direction.z += randVal_Z * offSet;
-
-		(*it_me)->_mesh->pos_ += (direction * _speed * delta_time);
-
-		TNL_SEQ_CO_END;
+		_mover->forward;
 
 	}
 
+	prev_pos = _mesh->pos_;
 
-	//if (GetDistanceToPlayer() > _IDLE_DISTANCE)
-	//{
-	//	tnl_sequence_.change(&EnemyZakoBox::SeqIdle);
-	//	TNL_SEQ_CO_END;
-
-	//}
-	//if (GetDistanceToPlayer() < _ATTACK_DISTANCE) {
-
-	//	tnl_sequence_.change(&EnemyZakoBox::SeqAttack);
-	//	TNL_SEQ_CO_END;
-
-	//}
-
-	//TNL_SEQ_CO_END;
 }
 
 
-bool EnemyZakoBox::SeqAttack(const float delta_time) {
 
+void EnemyZakoBox::ChasePlayer(const float delta_time) {
 
-	tnl_sequence_.invokeRepeating(&EnemyZakoBox::ShotStraightBullet, 3.0f, 1.0f);
+	//プレイヤー追跡
+	tnl::Vector3 direction = _player_ref->GetPos() - _mesh->pos_;
 
-	TNL_SEQ_CO_END;
+	direction.Normalize(direction);
+
+	_mesh->pos_ += (direction * _speed * delta_time);
 }
 
 
-std::list<Shared<StraightBullet>> EnemyZakoBox::InitStraightBullet() {
 
-	std::list<Shared<StraightBullet>> temp;
+void EnemyZakoBox::AttackPlayer(float delta_time) {
+
+
+	ShotStraightBullet();
+}
+
+
+
+void EnemyZakoBox::ShotStraightBullet() {
+
+
+	tnl::Vector3 spawn_pos;
 
 	for (int row = 0; row < INIT_BULLET_NUM; ++row) {
-
-		auto bullet = temp.front();
-
-		temp.pop_front();
 
 		// 発射位置を自分の正面に設定
 		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
@@ -163,43 +125,29 @@ std::list<Shared<StraightBullet>> EnemyZakoBox::InitStraightBullet() {
 		spawn_pos.z += _mesh->rot_.z;
 		spawn_pos.z -= 30;
 
-		bullet->_speed = BULLET_SPEED;
 
-		bullet->_mesh->pos_ = spawn_pos;
-		bullet->_move_dir = move_dir;
-
-
-		temp.emplace_back(std::make_shared<StraightBullet>(bullet));
+		_straight_bullets_e.emplace_back(std::make_shared<StraightBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
 	}
-
-	return std::move(temp);
 }
-
-
-
-void EnemyZakoBox::ShotStraightBullet() {
-
-
-
-
-	if(_straight_bullets_e.empty())	_straight_bullets_e = InitStraightBullet();
-
-
-}
-
 
 
 
 
 void EnemyZakoBox::LookAtPlayer(const float delta_time) {
 
-	tnl::Vector3 direction = (_player_ref->GetPos() * 40 * delta_time) - _mesh->pos_;
+	//tnl::Vector3 direction = (_player_ref->GetPos() * 40 * delta_time) - _mesh->pos_;
+	//float angle = atan2(direction.x, direction.z);
+	//_mesh->rot_ = tnl::Quaternion::RotationAxis({ 0,1,0 }, angle);
 
-	float angle = atan2(direction.x, direction.z);
+	tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
+	tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
 
-	_mesh->rot_ = tnl::Quaternion::RotationAxis({ 0,1,0 }, angle);
+	tnl::Vector3 local_axis_y = tnl::Vector3::Cross({ -1,0,0 }, xz);
 
+	_mesh->rot_ = tnl::Quaternion::LookAt(_mesh->pos_, _player_ref->GetPos(), local_axis_y);
 }
+
+
 
 
 void EnemyZakoBox::DebugInfo() {
@@ -216,28 +164,28 @@ void EnemyZakoBox::DebugInfo() {
 	DrawFormatString(10, 140, -1, "%f", _mesh->rot_.z);
 }
 
+
 void EnemyZakoBox::SetAndShotBullet(const float delta_time) {
 
 	auto it = _straight_bullets_e.begin();
 
-		while (it != _straight_bullets_e.end()) {
+	while (it != _straight_bullets_e.end()) {
 
-			(*it)->Update(delta_time);
-			if (!(*it)->_isActive) {
-				it = _straight_bullets_e.erase(it);
-				continue;
-			}
-			it++;
+		(*it)->Update(delta_time);
+		if (!(*it)->_isActive) {
+			it = _straight_bullets_e.erase(it);
+			continue;
 		}
+		it++;
+	}
 }
 
 
 bool EnemyZakoBox::Update(float delta_time) {
 
+	DoRoutineMoves(delta_time);
+
 	SetAndShotBullet(delta_time);
-
-	tnl_sequence_.update(delta_time);
-
 	return true;
 }
 

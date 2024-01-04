@@ -15,10 +15,4 @@ public:
 
 	void Render(Shared<dxe::Camera> _mainCamera) override;
 	void Update(float deltaTime) override;
-
-
-private:
-
-	Shared<StraightBullet> _straight_bullets_e_ref;
-
 };

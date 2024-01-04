@@ -17,9 +17,7 @@ public:
 
 	EnemyBase() {}
 
-	EnemyBase(std::list <Shared<EnemyBase>> _enemyList) { _enemy_list_ref = _enemyList; }
-
-	EnemyBase(EnemyInfo& info) {}
+	EnemyBase(std::list <Shared<EnemyBase>>& enemyList) {}
 
 	EnemyBase(const EnemyInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 
@@ -53,6 +51,9 @@ public:
 	// 敵の行動パターン初期化
 	void InitEnemyMove();
 
+
+	void SetEnemyListRef(std::list <Shared<EnemyBase>>& enemyList);
+
 protected:
 
 	// 形状、テクスチャ、ポジション、スケール
@@ -77,6 +78,13 @@ protected:
 
 	virtual void LookAtPlayer(const float delta_time) {};
 
+	// 待機、追跡、攻撃などのパターンを管理し実行
+	virtual void DoRoutineMoves(float delta_time){}
+
+	virtual void ChasePlayer(const float delta_time){}
+
+	virtual void AttackPlayer(float delta_time){}
+
 public:
 
 	Shared<dxe::Mesh>       _mesh = nullptr;
@@ -88,7 +96,7 @@ protected:
 
 	// ScenePlayのメンバ変数参照ポインタ	
 	Shared<Player>        _player_ref = nullptr;
-	Shared<dxe::Camera>   _camera_ref = nullptr;
+	Shared<dxe::Camera>   _mainCamera_ref = nullptr;
 
 	Shared<EnemyMover> _mover = nullptr;
 

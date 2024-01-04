@@ -22,13 +22,6 @@ public:
 
 private:
 
-	TNL_CO_SEQUENCE(EnemyZakoBox, &EnemyZakoBox::SeqIdle);
-
-	bool SeqIdle(const float delta_time);
-
-	bool SeqChasePlayer(const float delta_time);
-
-	bool SeqAttack(const float delta_time) ;
 
 	// íeån----------------------------------------------------------------
 
@@ -36,8 +29,6 @@ private:
 	void ShotStraightBullet() override;
 
 	void SetAndShotBullet(const float delta_time);
-
-	std::list<Shared<StraightBullet>> InitStraightBullet() override;
 
 
 	//----------------------------------------------------------------------
@@ -60,6 +51,12 @@ private:
 
 	void Clone() override { _mesh->createClone(); }
 	
+	void DoRoutineMoves(float delta_time) override;
+
+	void ChasePlayer(const float delta_time) override;
+
+	void AttackPlayer(float delta_time) override;
+
 
 private:
 
@@ -68,9 +65,7 @@ private:
 
 	const int INIT_BULLET_NUM = 6;
 
-	const float _IDLE_DISTANCE = 400.0f;
-	const float _ATTACK_DISTANCE = 300.0f;
-	const float BULLET_SPEED = 30.0f;
-
+	const float _IDLE_DISTANCE = 270.0f;
+	const float _ATTACK_DISTANCE = 250.0f;
+	const float BULLET_SPEED = 200.0f;
 };
-
