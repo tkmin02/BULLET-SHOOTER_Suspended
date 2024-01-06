@@ -20,12 +20,9 @@ public:
 
 public:
 
-	Shared<dxe::Mesh> _mesh = nullptr;
 	tnl::Vector3 _move_dir = { 0,0,0 };  //  is•ûŒü
 
 protected:
-
-	std::list<Shared<EnemyBullet>> _straight_bullets_e;
 
 	Shared<Player> _player_ref;
 	Shared<EnemyBase> _enemy_ref;
@@ -47,7 +44,8 @@ protected:
 	float _vz;
 
 	int _num;
-	float _fire_interval;    // ”­ËŠÔŠu
+	float _shot_interval;    // ”­ËŠÔŠu
+	float _shot_duration{}; // ‰½•bŠÔ”­Ë‚µ‘±‚¯‚é‚©
 
 	float _angle;            // Œ»İŒü‚¢‚Ä‚¢‚é•ûŒü‚ÌŠp“x
 	float _to_player_angle;  // ƒvƒŒƒCƒ„[‚Æ‚ÌŠp“x·

@@ -19,17 +19,17 @@ public:
 	// 変換コンストラクタ
 	EnemyZakoBox(const EnemyInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 
+	//void SetStraightBullet(std::list<Shared<StraightBullet>> bullet) override { _straight_bullets_e = bullet; }
+
+	//std::list<Shared<StraightBullet>> GetStraightBullet() override {return _straight_bullets_e;}
 
 private:
 
-
 	// 弾系----------------------------------------------------------------
 
+	void UpdateStraightBullet(const float delta_time);
 
-	void ShotStraightBullet() override;
-
-	void SetAndShotBullet(const float delta_time);
-
+	void InitStraightBullet() override;
 
 	//----------------------------------------------------------------------
 
@@ -57,10 +57,12 @@ private:
 
 	void AttackPlayer(float delta_time) override;
 
+public:
+
+	static std::list<Shared<StraightBullet>> _straight_bullets_e;
 
 private:
 
-	std::list<Shared<StraightBullet>> _straight_bullets_e;
 	tnl::Vector3 prev_pos;
 
 	const int INIT_BULLET_NUM = 6;

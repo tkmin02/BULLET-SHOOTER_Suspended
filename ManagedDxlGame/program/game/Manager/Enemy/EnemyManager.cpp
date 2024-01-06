@@ -4,7 +4,7 @@
 #include "../../ScenePlay/Collision/Collision.h"
 #include "../../ScenePlay/Bullet/Player/PlayerBullet.h"
 #include <random>
-
+#include "../../ScenePlay/Bullet/Enemy/StraightBullet.h"
 
 
 EnemyManager::EnemyManager(const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision)
@@ -27,6 +27,7 @@ EnemyManager::EnemyManager(const Shared<Player>& player, const Shared<dxe::Camer
 	}
 
 	_enemyBase = std::make_shared<EnemyBase>(_enemy_zakoBox_list);
+	_enemy_zakoBox = std::make_shared<EnemyZakoBox>();
 
 	_enemyBase->NewEnemyMover();
 	_enemyBase->InitEnemyMove();
@@ -85,25 +86,31 @@ void EnemyManager::SetCollisionPairList() {
 
 	for (auto it : _enemy_zakoBox_list) {
 
-		// プレイヤーとZakoBoxの当たり判定をセット
-		_collision_ref->SetCollision_MeshAMeshB(_player_ref->_mesh, (*it)._mesh, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
+		// プレイヤーとZakoBox
+		_collision_ref->CheckCollision_PlayerAndEnemy(_player_ref, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
 
 		// プレイヤーの弾とZakoBox
 		for (Shared<PlayerBullet> b : _player_ref->_straight_bullets_p) {
-
-			_collision_ref->SetCollision_MeshAMeshB(b->_mesh, (*it)._mesh, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
+			_collision_ref->CheckCollision_PlayerBulletAndEnemy(b, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
 		}
+	}
 
-		// エネミー同士の当たり判定
-		for (auto it2 : _enemy_zakoBox_list) {
 
-			if (it == it2) continue;
+	if (EnemyZakoBox::_straight_bullets_e.size() >= 1) {
+
+		for (auto it : _enemy_zakoBox->_straight_bullets_e) {
+
+			//敵の弾とプレイヤー
+			DrawString(200, 200, "hit", -1);
 
 			tnl::Vector3 prev_pos = (*it)._mesh->pos_;
-			_collision_ref->SetCollision_MeshAMeshB((*it)._mesh, (*it2)._mesh, tnl::Vector3{ 30,30,30 }, prev_pos);
+			_collision_ref->CheckCollision_EnemyBulletAndPlayer(it, _player_ref, tnl::Vector3{ 30,30,30 }, prev_pos);
 		}
 	}
 }
+
+
+
 
 
 

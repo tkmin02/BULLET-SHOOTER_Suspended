@@ -21,6 +21,7 @@ StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3
 
 	_speed = speed;
 	_player_ref = player;
+
 }
 
 
@@ -31,6 +32,7 @@ StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3
 
 
 void StraightBullet::Update(float delta_time) {
+
 
 	// ’e‚ÌŽõ–½‚Í‹——£‚ÅŠÇ—
 	static tnl::Vector3 start = _mesh->pos_;

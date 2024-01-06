@@ -5,6 +5,8 @@
 #include <functional>
 #include <random>
 
+std::list<Shared<StraightBullet>> EnemyZakoBox::_straight_bullets_e;
+
 
 EnemyZakoBox::EnemyZakoBox(const EnemyInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera)
 	: EnemyBase(data, player, camera)
@@ -103,21 +105,29 @@ void EnemyZakoBox::ChasePlayer(const float delta_time) {
 void EnemyZakoBox::AttackPlayer(float delta_time) {
 
 
-	ShotStraightBullet();
+	InitStraightBullet();
+	UpdateStraightBullet(delta_time);
 }
 
 
+int bullet_count = 0;
 
-void EnemyZakoBox::ShotStraightBullet() {
+void EnemyZakoBox::InitStraightBullet() {
 
+	auto now = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_shot_time).count();
 
-	tnl::Vector3 spawn_pos;
+	// 3•bŠÔŠu‚Å’e‚ð”­ŽË
+	if (elapsed < 3) return;
 
-	for (int row = 0; row < INIT_BULLET_NUM; ++row) {
+	bullet_count++;
+
+	for (int i = 0; i < INIT_BULLET_NUM; i++) {
+
+		if (bullet_count % 30 != 0) continue;
 
 		// ”­ŽËˆÊ’u‚ðŽ©•ª‚Ì³–Ê‚ÉÝ’è
 		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
-
 
 		tnl::Vector3 spawn_pos = _mesh->pos_;
 		spawn_pos.x += _mesh->rot_.x;
@@ -125,8 +135,15 @@ void EnemyZakoBox::ShotStraightBullet() {
 		spawn_pos.z += _mesh->rot_.z;
 		spawn_pos.z -= 30;
 
+		spawn_pos += move_dir * 20;
 
 		_straight_bullets_e.emplace_back(std::make_shared<StraightBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
+
+
+		bullet_count = 0;
+		break;
+
+		last_shot_time = now;
 	}
 }
 
@@ -141,7 +158,6 @@ void EnemyZakoBox::LookAtPlayer(const float delta_time) {
 
 	tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
 	tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
-
 	tnl::Vector3 local_axis_y = tnl::Vector3::Cross({ -1,0,0 }, xz);
 
 	_mesh->rot_ = tnl::Quaternion::LookAt(_mesh->pos_, _player_ref->GetPos(), local_axis_y);
@@ -165,19 +181,23 @@ void EnemyZakoBox::DebugInfo() {
 }
 
 
-void EnemyZakoBox::SetAndShotBullet(const float delta_time) {
+
+void EnemyZakoBox::UpdateStraightBullet(const float delta_time) {
 
 	auto it = _straight_bullets_e.begin();
 
 	while (it != _straight_bullets_e.end()) {
 
 		(*it)->Update(delta_time);
+
 		if (!(*it)->_isActive) {
 			it = _straight_bullets_e.erase(it);
 			continue;
 		}
 		it++;
 	}
+
+	if (_straight_bullets_e.empty()) InitStraightBullet();
 }
 
 
@@ -185,7 +205,6 @@ bool EnemyZakoBox::Update(float delta_time) {
 
 	DoRoutineMoves(delta_time);
 
-	SetAndShotBullet(delta_time);
 	return true;
 }
 

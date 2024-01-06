@@ -15,4 +15,8 @@ public:
 
 	void Render(Shared<dxe::Camera> _mainCamera) override;
 	void Update(float deltaTime) override;
+
+
+	Shared<dxe::Mesh> _mesh = nullptr;
+
 };

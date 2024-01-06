@@ -4,6 +4,7 @@
 #include "../../ScenePlay/Character/Player/Player.h"
 
 class Collision;
+class EnemyZakoBox;
 struct EnemyInfo;
 
 
@@ -38,6 +39,8 @@ private:
 
 	Shared<EnemyLoader> _enemyLoader = nullptr;
 	Shared<EnemyBase> _enemyBase = nullptr;
+
+	Shared<EnemyZakoBox> _enemy_zakoBox = nullptr;
 
 	std::list<Shared<EnemyBase>> _enemy_zakoBox_list;
 	std::unordered_map<int, EnemyInfo> _enemyData;
