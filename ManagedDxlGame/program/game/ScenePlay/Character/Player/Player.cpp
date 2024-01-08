@@ -28,7 +28,7 @@ Player::Player(Shared<dxe::Camera> camera_ref) {
 
 
 
-void Player::SetEnemiesListRef_ClassP(std::list<Shared<EnemyBase>> enemies_list_ref) {
+void Player::SetEnemiesListRef_ClassP(std::vector<Shared<EnemyBase>> enemies_list_ref) {
 
 	_enemies_list_ref = enemies_list_ref;
 }
@@ -436,7 +436,6 @@ void Player::AdjustPlayerVelocity() {
 
 	// ÅI“I‚ÈŽp¨
 	_mesh->rot_ = rot_y_ * rot_xz_;
-
 
 	_mesh->rot_ = rot_y_ * rot_x_ * rot_xz_;
 }

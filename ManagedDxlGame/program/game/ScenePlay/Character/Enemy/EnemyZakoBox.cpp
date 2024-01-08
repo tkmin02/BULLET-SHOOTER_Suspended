@@ -1,18 +1,21 @@
 #include "EnemyZakoBox.h"
 #include "../../Bullet/Enemy/EnemyBullet.h"
 #include "../../Bullet/Enemy/StraightBullet.h"
+#include "../../Bullet/Enemy/HomingBullet.h"
 #include "../../EnemyMove/EnemyMover.h"
 #include <functional>
 #include <random>
 
 std::list<Shared<StraightBullet>> EnemyZakoBox::_straight_bullets_e;
+std::list<Shared<HomingBullet>> EnemyZakoBox::_homing_bullets_e;
 
 
-EnemyZakoBox::EnemyZakoBox(const EnemyInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera)
+EnemyZakoBox::EnemyZakoBox(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera)
 	: EnemyBase(data, player, camera)
 {
 	collide_size = { 30,30,30 };
 }
+
 
 
 void EnemyZakoBox::SetMeshInfo() {
@@ -97,34 +100,46 @@ void EnemyZakoBox::ChasePlayer(const float delta_time) {
 
 	direction.Normalize(direction);
 
-	_mesh->pos_ += (direction * _speed * delta_time);
+	_mesh->pos_ += (direction * _charaMoveSpeed * delta_time);
 }
 
 
 
 void EnemyZakoBox::AttackPlayer(float delta_time) {
 
+	int randValue = rand() % 2;
 
-	InitStraightBullet();
-	UpdateStraightBullet(delta_time);
+	switch (randValue)
+	{
+	case 0:
+	{
+		//InitStraightBullet();
+		//UpdateStraightBullet(delta_time);
+		break;
+	}
+	case 1:
+		InitHomingBullet();
+		UpdateHomingBullet(delta_time);
+		break;
+	}
 }
 
 
-int bullet_count = 0;
+int straight_bullet_count = 0;
 
 void EnemyZakoBox::InitStraightBullet() {
 
 	auto now = std::chrono::steady_clock::now();
-	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_shot_time).count();
+	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_shot_time_straight_blt).count();
 
 	// 3•bŠÔŠu‚Å’e‚ð”­ŽË
 	if (elapsed < 3) return;
 
-	bullet_count++;
+	straight_bullet_count++;
 
 	for (int i = 0; i < INIT_BULLET_NUM; i++) {
 
-		if (bullet_count % 30 != 0) continue;
+		if (straight_bullet_count % 30 != 0 && straight_bullet_count <= 180) continue;
 
 		// ”­ŽËˆÊ’u‚ðŽ©•ª‚Ì³–Ê‚ÉÝ’è
 		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
@@ -140,11 +155,89 @@ void EnemyZakoBox::InitStraightBullet() {
 		_straight_bullets_e.emplace_back(std::make_shared<StraightBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
 
 
-		bullet_count = 0;
+		straight_bullet_count = 0;
 		break;
 
-		last_shot_time = now;
+		last_shot_time_straight_blt = now;
 	}
+}
+
+
+
+void EnemyZakoBox::UpdateStraightBullet(const float delta_time) {
+
+	auto it = _straight_bullets_e.begin();
+
+	while (it != _straight_bullets_e.end()) {
+
+		(*it)->Update(delta_time);
+
+		if (!(*it)->_isActive) {
+			it = _straight_bullets_e.erase(it);
+			continue;
+		}
+		it++;
+	}
+
+	if (_straight_bullets_e.empty()) InitStraightBullet();
+}
+
+
+
+int homing_bullet_count = 0;
+
+void EnemyZakoBox::InitHomingBullet() {
+
+	auto now = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_shot_time_homing_blt).count();
+
+	// 3•bŠÔŠu‚Å’e‚ð”­ŽË
+	if (elapsed < 3) return;
+
+	homing_bullet_count++;
+
+	for (int i = 0; i < INIT_BULLET_NUM; i++) {
+
+		if (homing_bullet_count % 30 != 0 && homing_bullet_count <= 180) continue;
+
+		// ”­ŽËˆÊ’u‚ðŽ©•ª‚Ì³–Ê‚ÉÝ’è
+		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
+
+		tnl::Vector3 spawn_pos = _mesh->pos_;
+		spawn_pos.x += _mesh->rot_.x;
+		spawn_pos.y += _mesh->rot_.y;
+		spawn_pos.z += _mesh->rot_.z;
+		spawn_pos.z -= 30;
+
+		spawn_pos += move_dir * 20;
+
+		_homing_bullets_e.emplace_back(std::make_shared<HomingBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
+
+		homing_bullet_count = 0;
+		break;
+
+		last_shot_time_homing_blt = now;
+	}
+}
+
+
+
+void EnemyZakoBox::UpdateHomingBullet(const float delta_time) {
+
+	auto it = _homing_bullets_e.begin();
+
+	while (it != _homing_bullets_e.end()) {
+
+		(*it)->Update(delta_time);
+
+		if (!(*it)->_isActive) {
+			it = _homing_bullets_e.erase(it);
+			continue;
+		}
+		it++;
+	}
+
+	if (_homing_bullets_e.empty()) InitHomingBullet();
 }
 
 
@@ -182,26 +275,10 @@ void EnemyZakoBox::DebugInfo() {
 
 
 
-void EnemyZakoBox::UpdateStraightBullet(const float delta_time) {
-
-	auto it = _straight_bullets_e.begin();
-
-	while (it != _straight_bullets_e.end()) {
-
-		(*it)->Update(delta_time);
-
-		if (!(*it)->_isActive) {
-			it = _straight_bullets_e.erase(it);
-			continue;
-		}
-		it++;
-	}
-
-	if (_straight_bullets_e.empty()) InitStraightBullet();
-}
-
 
 bool EnemyZakoBox::Update(float delta_time) {
+
+	if (_isDead) return false;
 
 	DoRoutineMoves(delta_time);
 
@@ -212,9 +289,15 @@ bool EnemyZakoBox::Update(float delta_time) {
 
 void EnemyZakoBox::Render(Shared<dxe::Camera> camera) {
 
+	if (_isDead) return;
+
 	_mesh->render(camera);
 
 	for (auto blt : _straight_bullets_e) {
+		blt->Render(camera);
+	}
+
+	for (auto blt : _homing_bullets_e) {
 		blt->Render(camera);
 	}
 

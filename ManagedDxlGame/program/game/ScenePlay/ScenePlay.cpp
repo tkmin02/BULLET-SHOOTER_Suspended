@@ -8,7 +8,7 @@
 #include "Bullet/Enemy/EnemyBullet.h"
 
 
-ScenePlay::ScenePlay() {
+ScenePlay::ScenePlay(std::string selected_difficulty) {
 
 	// メインカメラ
 	_mainCamera = std::make_shared<dxe::Camera>(DXE_WINDOW_WIDTH, DXE_WINDOW_HEIGHT);
@@ -27,7 +27,7 @@ ScenePlay::ScenePlay() {
 	_collision = std::make_shared<Collision>();
 
 	// 敵に関するあらゆる処理を全て管理
-	_enemyManager = std::make_shared<EnemyManager>(_player, _mainCamera, _collision);
+	_enemyManager = std::make_shared<EnemyManager>(_player, _mainCamera, _collision, selected_difficulty);
 
 	// 画面左下の索敵レーダーの画像
 	miniMap_hdl = LoadGraph("graphics/miniMap/radar.jpg");
@@ -74,6 +74,7 @@ void ScenePlay::Render() {
 	// ミニマップ
 	DrawRotaGraph(miniMap_center_pos.x, miniMap_center_pos.y, 0.035, 0, miniMap_hdl, 1);
 	RenderEnemyRadarOnMiniMap();
+
 }
 
 

@@ -2,7 +2,7 @@
 #include "../../Bullet/Enemy/StraightBullet.h"
 
 
-EnemyBase::EnemyBase(const EnemyInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera) {
+EnemyBase::EnemyBase(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera) {
 
 	_enemyInfo_ref = data;
 
@@ -10,9 +10,10 @@ EnemyBase::EnemyBase(const EnemyInfo& data, const Shared<Player>& player, const 
 	_name = data._name;
 	_hp = data._hp;
 	_scale = data._scale;
-	_speed = data._speed;
+	_charaMoveSpeed = data._charaMoveSpeed;
 
-
+	_maxBulletSpawnCount = data._maxBulletSpawnCount;
+	_maxTotalEnemySpawnCount = data._maxTotalEnemySpawnCount;
 
 	_player_ref = player;
 	_mainCamera_ref = camera;
@@ -27,8 +28,18 @@ void EnemyBase::Initialize() {
 }
 
 
+
 void EnemyBase::InitEnemyMove() {
-	
+
+}
+
+
+
+void EnemyBase::DecreaseHP(int damage) {
+
+	_hp -= damage;
+
+	if (_hp <= 0) _isDead = true;
 }
 
 

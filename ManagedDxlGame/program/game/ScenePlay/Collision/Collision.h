@@ -7,6 +7,7 @@ class Player;
 class PlayerBullet;
 class EnemyBase;
 class StraightBullet;
+class HomingBullet;
 class EnemyZakoBox;
 
 class Collision {
@@ -17,7 +18,9 @@ public:
 
 	void CheckCollision_PlayerAndEnemy(Shared<Player> meshA, Shared<EnemyBase> meshB, tnl::Vector3 collisionSize, tnl::Vector3 prev_pos);
 
-	void CheckCollision_EnemyBulletAndPlayer(Shared<StraightBullet> bullet, Shared<Player> player, tnl::Vector3 collisionSize, tnl::Vector3 prev_pos);
+	void CheckCollision_EnemyStraightBulletAndPlayer(Shared<StraightBullet> bullet, Shared<Player> player, tnl::Vector3 collisionSize, tnl::Vector3 prev_pos);
+
+	void CheckCollision_EnemyHomingBulletAndPlayer(Shared<HomingBullet> bullet, Shared<Player> player, tnl::Vector3 collisionSize, tnl::Vector3 prev_pos);
 
 	void DestroyMeshByHit(Shared<dxe::Mesh> meshA, Shared<dxe::Mesh> meshB, tnl::Vector3 collisionSize, tnl::Vector3 prev_pos);
 

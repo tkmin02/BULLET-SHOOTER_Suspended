@@ -53,7 +53,7 @@ public:
 	void SetPos(const tnl::Vector3 pos) { _mesh->pos_ = pos; }
 
 	// 管理するエネミーのリストの参照用
-	void SetEnemiesListRef_ClassP(std::list<Shared<EnemyBase>> enemies_list_ref);
+	void SetEnemiesListRef_ClassP(std::vector<Shared<EnemyBase>> enemies_list_ref);
 	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
 
 
@@ -79,7 +79,7 @@ private:
 	Shared<Player> _player_ref = nullptr;
 	Shared<dxe::Camera> _mainCamera_ref = nullptr;
 	Shared<EnemyBase> _enemy_ref = nullptr;
-	std::list <Shared<EnemyBase>> _enemies_list_ref{};
+	std::vector <Shared<EnemyBase>> _enemies_list_ref{};
 
 	int _hp{};
 	int  _enemy_index{};

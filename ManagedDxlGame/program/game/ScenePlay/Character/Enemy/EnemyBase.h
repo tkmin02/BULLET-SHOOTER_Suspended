@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include "../../../DxLibEngine.h"
 #include "../Player/Player.h"
 #include "../../../Loader/EnemyLoader.h"
@@ -17,9 +18,9 @@ public:
 
 	EnemyBase() {}
 
-	EnemyBase(std::list <Shared<EnemyBase>>& enemyList) {}
+	EnemyBase(std::vector<Shared<EnemyBase>>& enemyList) {}
 
-	EnemyBase(const EnemyInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
+	EnemyBase(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 
 	virtual ~EnemyBase() = default;
 
@@ -39,7 +40,7 @@ public:
 
 	int GetCounter() const { return _elapsed; }
 
-	float getSpeed() const { return _speed; }
+	float getSpeed() const { return _charaMoveSpeed; }
 
 	float getAngle() const { return _angle; }
 
@@ -51,10 +52,20 @@ public:
 	// 敵の行動パターン初期化
 	void InitEnemyMove();
 
-
-	void SetEnemyListRef(std::list <Shared<EnemyBase>>& enemyList);
+	void DecreaseHP(int damage);
 
 protected:
+
+	// 弾系--------------------------------------------------------------
+	virtual void UpdateStraightBullet(const float delta_time) {}
+	// プレイヤーへ照射、追跡なし
+	virtual void ShotStraightBullet(std::list<Shared<EnemyBullet>> bullet) {};
+
+	virtual void UpdateHomingBullet(const float delta_time) {}
+
+	virtual void InitHomingBullet() {}
+
+
 
 	// 形状、テクスチャ、ポジション、スケール
 	virtual void SetMeshInfo() {};
@@ -63,10 +74,8 @@ protected:
 	virtual void Clone() {}
 
 
-	// プレイヤーへ照射、追跡なし
-	virtual void ShotStraightBullet() {};
 
-	virtual std::list<Shared<StraightBullet>> InitStraightBullet() { return _straight_bullets_e; }
+	virtual void InitStraightBullet() {}
 
 
 	// プレイヤーへ照射、角度制限付きで追跡
@@ -79,11 +88,11 @@ protected:
 	virtual void LookAtPlayer(const float delta_time) {};
 
 	// 待機、追跡、攻撃などのパターンを管理し実行
-	virtual void DoRoutineMoves(float delta_time){}
+	virtual void DoRoutineMoves(float delta_time) {}
 
-	virtual void ChasePlayer(const float delta_time){}
+	virtual void ChasePlayer(const float delta_time) {}
 
-	virtual void AttackPlayer(float delta_time){}
+	virtual void AttackPlayer(float delta_time) {}
 
 public:
 
@@ -91,7 +100,6 @@ public:
 
 protected:
 
-	std::list<Shared<StraightBullet>> _straight_bullets_e;
 	std::list <Shared<EnemyBase>> _enemy_list_ref;
 
 	// ScenePlayのメンバ変数参照ポインタ	
@@ -101,8 +109,7 @@ protected:
 	Shared<EnemyMover> _mover = nullptr;
 
 	// EnemyLoader.hからの参照
-	EnemyInfo        _enemyInfo_ref;
-
+	EnemyZakoInfo        _enemyInfo_ref;
 
 public:
 
@@ -111,22 +118,25 @@ public:
 	bool _canShot = false;   //弾が撃てるようになったか
 
 	// CSVからロード-----------------------
+
 	int           _id{};
 	int           _hp{};
-	float      _scale{};
-	std::string _name{};
+	int           _maxBulletSpawnCount{};
+	int           _maxTotalEnemySpawnCount{};
+	float         _charaMoveSpeed{};
+	float         _scale{};
+	std::string   _name{};
+
 	// ------------------------------------
-		
+
 protected:
 
 	int        _score{};
 	int        _elapsed{};
 	int        _life_time_duration{};
 	int        _move_pattern_id{};  //移動パターン
-
-	float      _speed{};
 	float      _angle{}; // 自分自身の現在向いている方向の角度
-	float      _angle_to_player {}; // 自分とプレイヤーの角度差分
+	float      _angle_to_player{}; // 自分とプレイヤーの角度差分
 
 	bool addedRandVal_posX = false;
 
@@ -134,11 +144,13 @@ protected:
 
 	int _stop_time{}; // 停止時間
 
-	int _shot_time{}; // 何秒間発射し続けるか
-
 	int shot_count{}; // 弾が打てるようになってからのカウント
 
 	int _life_timer{}; // 生成時に時間カウントを開始し、寿命を超えたら消滅
 
 	int _life_time_limit{}; // 敵の寿命。タイマーがこの値を超えたら敵が消滅
+
+	// 弾系--------------------------------------------------------------
+	std::chrono::steady_clock::time_point last_shot_time_straight_blt;
+	std::chrono::steady_clock::time_point last_shot_time_homing_blt;
 };

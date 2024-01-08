@@ -2,6 +2,7 @@
 #include "DxLibEngine.h"
 #include "gm_main.h"
 #include "Manager/Scene/SceneManager.h"
+#include "SceneSelectDifficulty/SceneSelectDifficulty.h"
 #include "ScenePlay/ScenePlay.h"
 
 
@@ -37,8 +38,7 @@ void gameStart() {
 	 //îwåiêF
 	SetBackgroundColor(64, 64, 64);
 
-
-	SceneManager::GetInstance(new ScenePlay());
+	SceneManager::GetInstance(new SceneSelectDifficulty());
 }
 
 

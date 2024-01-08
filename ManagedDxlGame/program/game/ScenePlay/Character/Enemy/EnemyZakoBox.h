@@ -5,6 +5,8 @@
 #include "../../Bullet/Enemy/EnemyBullet.h"
 #include "../../../Loader/EnemyLoader.h"
 
+class HomingBullet;
+
 
 class EnemyZakoBox : public EnemyBase
 {
@@ -14,22 +16,27 @@ public:
 
 	explicit EnemyZakoBox(tnl::Vector3){}
 
-	EnemyZakoBox(const EnemyInfo& info) {}
+	EnemyZakoBox(const EnemyZakoInfo& info) {}
+
+	EnemyZakoBox(std::vector<Shared<EnemyBase>>& list) {}
+
+	EnemyZakoBox(std::vector<Shared<EnemyZakoInfo>>& enemyList) {}
 
 	// 変換コンストラクタ
-	EnemyZakoBox(const EnemyInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
-
-	//void SetStraightBullet(std::list<Shared<StraightBullet>> bullet) override { _straight_bullets_e = bullet; }
-
-	//std::list<Shared<StraightBullet>> GetStraightBullet() override {return _straight_bullets_e;}
+	EnemyZakoBox(const EnemyZakoInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
+	
 
 private:
 
 	// 弾系----------------------------------------------------------------
 
-	void UpdateStraightBullet(const float delta_time);
+	void UpdateStraightBullet(const float delta_time) override;
 
 	void InitStraightBullet() override;
+
+	void UpdateHomingBullet(const float delta_time) override;
+
+	void InitHomingBullet() override;
 
 	//----------------------------------------------------------------------
 
@@ -60,10 +67,12 @@ private:
 public:
 
 	static std::list<Shared<StraightBullet>> _straight_bullets_e;
+	static std::list<Shared<HomingBullet>> _homing_bullets_e;
 
 private:
 
 	tnl::Vector3 prev_pos;
+
 
 	const int INIT_BULLET_NUM = 6;
 

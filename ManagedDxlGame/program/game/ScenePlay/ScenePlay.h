@@ -18,7 +18,8 @@ class ScenePlay : public SceneBase
 {
 public:
 
-	ScenePlay();
+	ScenePlay(){}
+	ScenePlay(std::string selected_difficulty);
 
 private:
 
