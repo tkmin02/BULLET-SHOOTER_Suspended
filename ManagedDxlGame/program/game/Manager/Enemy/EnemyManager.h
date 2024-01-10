@@ -29,7 +29,9 @@ public:
 
 private:
 
-	void NewEnemy();
+	void InitEnemyZakoInfo();
+
+	void InitEnemyBossInfo();
 
 	// 敵のスポーン位置はプレイヤーの位置や行動に応じて決める
 	void CheckDoSpawnEnemy(const float& delta_time);
@@ -38,18 +40,20 @@ private:
 
 private:
 
-	Shared<EnemyLoader> _enemyLoader = nullptr;
+	Shared<CsvLoader> _csvLoader = nullptr;
 	Shared<EnemyBase> _enemyBase = nullptr;
 
 	Shared<EnemyZakoBox> _enemy_zakoBox = nullptr;
 
 	std::vector<Shared<EnemyBase>> _enemy_zako_list;
 	std::unordered_map<int, EnemyZakoInfo> _enemyZakoData_map;
+	EnemyZakoInfo _sEnemy_zakoBox_info{};
+	EnemyZakoInfo _sEnemy_zakoDome_info{};
 
-	EnemyZakoInfo _sEnemy_zakoBox_info;
-
-	Shared<EnemyBoss> _boss_patchouli_knowledge;
+	std::vector<Shared<EnemyBase>> _enemy_boss_list;
 	std::unordered_map<int, EnemyBossInfo> _enemyBossData_map;
+	EnemyBossInfo _sBoss_PatchouliKnowledge_info{};
+
 
 
 	// 参照
@@ -63,7 +67,7 @@ private:
 
 	const std::string _SELECTED_LEVEL;
 
-	static int _spawnedCount_zakoBox ;
+	static int _deadCount_zakoBox ;
 
 
 	// 1度に生成が可能な最大数

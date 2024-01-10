@@ -1,13 +1,14 @@
 #include <random>
 #include "EnemyManager.h"
 #include "../../ScenePlay/Character/Enemy/EnemyZakoBox.h"
-#include "../../Loader/EnemyLoader.h"
+#include "../../ScenePlay/Character/Enemy/EnemyZakoDome.h"
+#include "../../Loader/CsvLoader.h"
 #include "../../ScenePlay/Collision/Collision.h"
 #include "../../ScenePlay/Bullet/Player/PlayerBullet.h"
 #include "../../ScenePlay/Bullet/Enemy/StraightBullet.h"
 #include "../../ScenePlay/Bullet/Enemy/HomingBullet.h"
 
-int EnemyManager::_spawnedCount_zakoBox = 0;
+int EnemyManager::_deadCount_zakoBox = 0;
 
 
 EnemyManager::EnemyManager(
@@ -16,22 +17,22 @@ EnemyManager::EnemyManager(
 
 
 	// 敵のロード
-	_enemyLoader = std::make_shared<EnemyLoader>(difficulty);
+	_csvLoader = std::make_shared<CsvLoader>(difficulty);
 
-	_enemyZakoData_map = _enemyLoader->LoadEnemyZakoInfos("csv/EnemyZakoInfos.csv");
+	_enemyZakoData_map = _csvLoader->LoadEnemyZakoInfos("csv/EnemyZakoInfos.csv");
+	_enemyBossData_map = _csvLoader->LoadEnemyBossInfos("csv/EnemyBossInfos.csv");
 
 	if (_SELECTED_LEVEL == "Easy")         maxEnemySpawnCount_PerInterval = 1;
 	else if (_SELECTED_LEVEL == "Normal")  maxEnemySpawnCount_PerInterval = 2;
 	else if (_SELECTED_LEVEL == "Hard")    maxEnemySpawnCount_PerInterval = 3;
 	else if (_SELECTED_LEVEL == "Lunatic") maxEnemySpawnCount_PerInterval = 4;
 
-	NewEnemy();
+	InitEnemyZakoInfo();
+	InitEnemyBossInfo();
 
 	// メッシュの定義など
 	for (auto enemy : _enemy_zako_list) enemy->Initialize();
 
-
-	_enemy_zakoBox = std::make_shared<EnemyZakoBox>(_enemy_zako_list);
 
 
 	// プレイヤークラスでエネミーのリストを参照する変数
@@ -40,7 +41,7 @@ EnemyManager::EnemyManager(
 
 
 
-void EnemyManager::NewEnemy() {
+void EnemyManager::InitEnemyZakoInfo() {
 
 	// 生成位置はランダムにしたい
 	std::random_device rd;
@@ -50,24 +51,71 @@ void EnemyManager::NewEnemy() {
 	// ロードしたエネミーデータ分ループ
 	for (auto enemy = _enemyZakoData_map.begin(); enemy != _enemyZakoData_map.end(); enemy++) {
 
-		switch ((*enemy).first)
+		switch ((*enemy).first) // id
 		{
-		case 0:
-
+		case 0: // EnemyZakoBoxデータ取得
+			_sEnemy_zakoBox_info._charaMoveSpeed = (*enemy).second._charaMoveSpeed;
 			_sEnemy_zakoBox_info._maxTotalEnemySpawnCount = (*enemy).second._maxTotalEnemySpawnCount;
-
+			_sEnemy_zakoBox_info._name = (*enemy).second._name;
+			_sEnemy_zakoBox_info._scale = (*enemy).second._scale;
+			break;
+		case 1: // EnemyZakoDomeデータ取得
+			_sEnemy_zakoDome_info._charaMoveSpeed = (*enemy).second._charaMoveSpeed;
+			_sEnemy_zakoDome_info._maxTotalEnemySpawnCount = (*enemy).second._maxTotalEnemySpawnCount;
+			_sEnemy_zakoBox_info._name = (*enemy).second._name;
+			_sEnemy_zakoBox_info._scale = (*enemy).second._scale;
+			break;
 		default:
 			break;
 		}
 	}
 
 
-	for (int i = 0; i < maxEnemySpawnCount_PerInterval; i++) {
-		_enemy_zako_list.emplace_back(std::make_shared<EnemyZakoBox>(_enemyZakoData_map[0], _player_ref, _mainCamera_ref));
-		EnemyManager::_spawnedCount_zakoBox++;
+	for (int i = 0; i < _sEnemy_zakoBox_info._maxTotalEnemySpawnCount; i++) {
+
+		auto enemy_box = std::make_shared<EnemyZakoBox>(_enemyZakoData_map[0], _player_ref, _mainCamera_ref);
+
+		enemy_box->_isDead = false;
+		enemy_box->_charaMoveSpeed = _sEnemy_zakoBox_info._charaMoveSpeed;
+		enemy_box->_name = _sEnemy_zakoBox_info._name;
+		enemy_box->_scale = _sEnemy_zakoBox_info._scale;
+		_enemy_zako_list.push_back(enemy_box);	// EnemyZakoBox 生成
+	}
+
+	for (int j = 0; j < _sEnemy_zakoDome_info._maxTotalEnemySpawnCount; j++) {
+
+		auto enemy_dome = std::make_shared<EnemyZakoDome>(_enemyZakoData_map[1], _player_ref, _mainCamera_ref);
+
+		enemy_dome->_isDead = false;
+		enemy_dome->_charaMoveSpeed = _sEnemy_zakoDome_info._charaMoveSpeed;
+		enemy_dome->_name = _sEnemy_zakoDome_info._name;
+		enemy_dome->_scale = _sEnemy_zakoDome_info._scale;
+		_enemy_zako_list.push_back(enemy_dome); // EnemyZakoDome 生成 
 	}
 }
 
+
+
+
+void EnemyManager::InitEnemyBossInfo() {
+
+	for (auto boss = _enemyBossData_map.begin(); boss != _enemyBossData_map.end(); boss++) {
+
+		switch ((*boss).first) // id
+		{
+		case 0: // EnemyZakoBoxデータ取得
+			_sBoss_PatchouliKnowledge_info._charaMoveSpeed = (*boss).second._charaMoveSpeed;
+			_sBoss_PatchouliKnowledge_info._name = (*boss).second._name;
+			_sBoss_PatchouliKnowledge_info._scale = (*boss).second._scale;
+			break;
+		case 1:
+			break;
+		default:
+			break;
+		}
+	}
+	_enemy_boss_list.push_back(std::make_shared<EnemyBoss>(_enemyBossData_map[0], _player_ref, _mainCamera_ref));
+}
 
 
 
@@ -82,11 +130,10 @@ void EnemyManager::CheckDoSpawnEnemy(const float& delta_time) {
 
 
 		// 生成数が全体の上限値に達したら
-		if (EnemyManager::_spawnedCount_zakoBox >= _sEnemy_zakoBox_info._maxTotalEnemySpawnCount) break;
+		if (EnemyManager::_deadCount_zakoBox >= _sEnemy_zakoBox_info._maxTotalEnemySpawnCount) break;
 
 
-		_enemy_zako_list.emplace_back(std::make_shared<EnemyZakoBox>(_enemyZakoData_map[0], _player_ref, _mainCamera_ref));
-		EnemyManager::_spawnedCount_zakoBox++;
+		_enemy_zako_list.push_back(std::make_shared<EnemyZakoBox>(_enemyZakoData_map[0], _player_ref, _mainCamera_ref));
 	}
 
 	_enemy_zako_list[0]->_isAllDead = true;
@@ -99,20 +146,43 @@ void EnemyManager::SetCollisionPairList() {
 
 	for (auto it : _enemy_zako_list) {
 
-		// プレイヤーとZakoBox
+		// プレイヤーとZakoエネミー各種
 		_collision_ref->CheckCollision_PlayerAndEnemy(_player_ref, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
 
-		// プレイヤーの弾とZakoBox
+		// プレイヤーの弾とZakoエネミー各種
+		for (Shared<PlayerBullet> b : _player_ref->_straight_bullets_p) {
+			_collision_ref->CheckCollision_PlayerBulletAndEnemy(b, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
+		}
+
+		// Zakoエネミー同士の当たり判定
+		for (auto it2 : _enemy_zako_list) {
+
+			tnl::Vector3 prev_pos = (*it)._mesh->pos_;
+
+			if (it == it2) continue;
+			_collision_ref->CheckCollision_EnemyAndEnemy(it, it2, _collision_ref->COLLISION_SIZE_ZAKOBOX, prev_pos);
+		}
+	}
+
+
+	for (auto it : _enemy_boss_list) {
+
+		// プレイヤーとBossエネミー各種
+		_collision_ref->CheckCollision_PlayerAndEnemy(_player_ref, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
+
+		// プレイヤーの弾とBossエネミー各種
 		for (Shared<PlayerBullet> b : _player_ref->_straight_bullets_p) {
 			_collision_ref->CheckCollision_PlayerBulletAndEnemy(b, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos());
 		}
 	}
 
 
-	//敵の直進弾とプレイヤー
-	if (EnemyZakoBox::_straight_bullets_e.size() >= 1) {
 
-		for (auto it : _enemy_zakoBox->_straight_bullets_e) {
+
+	//敵の直進弾とプレイヤー
+	if (EnemyZakoBox::_straight_bullets_zakoBox.size() >= 1) {
+
+		for (auto it : _enemy_zakoBox->_straight_bullets_zakoBox) {
 
 			tnl::Vector3 prev_pos = (*it)._mesh->pos_;
 			_collision_ref->CheckCollision_EnemyStraightBulletAndPlayer(it, _player_ref, tnl::Vector3{ 30,30,30 }, prev_pos);
@@ -120,9 +190,9 @@ void EnemyManager::SetCollisionPairList() {
 	}
 
 	//敵の追尾弾とプレイヤー
-	if (EnemyZakoBox::_homing_bullets_e.size() >= 1) {
+	if (EnemyZakoBox::_homing_bullets_zakoBox.size() >= 1) {
 
-		for (auto it : _enemy_zakoBox->_homing_bullets_e) {
+		for (auto it : _enemy_zakoBox->_homing_bullets_zakoBox) {
 
 			tnl::Vector3 prev_pos = (*it)._mesh->pos_;
 			_collision_ref->CheckCollision_EnemyHomingBulletAndPlayer(it, _player_ref, tnl::Vector3{ 30,30,30 }, prev_pos);
@@ -158,27 +228,50 @@ void EnemyManager::Render() const {
 	for (const auto enemy : _enemy_zako_list) {
 		enemy->Render(_mainCamera_ref);
 	}
-}
 
+	if (_enemy_zako_list.empty() && !_enemy_boss_list.empty()) {
+
+		_enemy_boss_list[0]->Render(_mainCamera_ref);
+
+	}
+
+}
 
 
 bool EnemyManager::Update(const float& deltaTime) {
 
-	CheckDoSpawnEnemy(deltaTime);
+	//CheckDoSpawnEnemy(deltaTime);
 	SetCollisionPairList();
 
-	for (auto it_enemy = _enemy_zako_list.begin(); it_enemy != _enemy_zako_list.end();) {
+	if (!_enemy_zako_list.empty()) {
 
-		(*it_enemy)->SetDeltaTimeRef(deltaTime);
+		for (auto it_zako = _enemy_zako_list.begin(); it_zako != _enemy_zako_list.end();) {
 
-		if ((*it_enemy)->Update(deltaTime) == false) {
+			if ((*it_zako)->Update(deltaTime) == false) {
 
-			it_enemy = _enemy_zako_list.erase(it_enemy);
-		}
-		else {
-			it_enemy++;
+				it_zako = _enemy_zako_list.erase(it_zako);
+			}
+			else {
+				it_zako++;
+			}
 		}
 	}
+
+
+	if (_enemy_zako_list.empty() && !_enemy_boss_list.empty()) {
+
+		auto it_boss = _enemy_boss_list.begin();
+
+		if (it_boss[0]->Update(deltaTime) == false) {
+
+			it_boss = _enemy_boss_list.erase(it_boss);
+		}
+		else {
+			it_boss++;
+		}
+
+	}
+
 
 
 	return true;
