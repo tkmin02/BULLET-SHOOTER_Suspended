@@ -1,0 +1,4 @@
+ID,Stage,Scale,Name,Easy_HP,Normal_HP,Hard_HP,Lunatic_HP,Easy_MaxBulletSpawnCount,Normal_MaxBulletSpawnCount,Hard_MaxBulletSpawnCount,Luntaic_MaxBulletSpawnCount,Easy_MaxEnemySpawnCount,Normal_MaxEnemySpawnCount,Hard_MaxEnemySpawnCount,Luntaic_MaxEnemySpawnCount,Easy_CharaMoveSpeed,Normal_CharaMoveSpeed,Hard_CharaMoveSpeed,Lunatic_CharaMoveSpeed
+0,1,50,Box,50,10,20,30,5,10,15,20,1,5,8,10,0.35,0.4,0.45,0.5
+1,2,50,Cone,70,6,12,20,3,7,11,16,1,7,10,13,0.35,0.4,0.45,0.5
+2,3,50,Cylinder,80,13,17,24,3,7,11,16,1,7,10,13,0.35,0.4,0.45,0.5
