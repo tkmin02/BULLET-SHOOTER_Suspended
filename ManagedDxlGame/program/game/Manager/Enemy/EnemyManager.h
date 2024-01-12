@@ -1,7 +1,6 @@
 #pragma once
 #include "./../../DxLibEngine.h"
 #include "../../ScenePlay/Character/Enemy/EnemyBase.h"
-#include "../../ScenePlay/Character/EnemyBoss/EnemyBoss.h"
 #include "../../ScenePlay/Character/Player/Player.h"
 
 class Collision;
@@ -18,7 +17,7 @@ public:
 
 	EnemyManager() {}
 
-	EnemyManager(const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty);
+	EnemyManager(int stageID, const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty);
 
 	~EnemyManager() { _enemy_zako_list.clear(); }
 
@@ -29,9 +28,9 @@ public:
 
 private:
 
-	void InitEnemyZakoInfo();
+	void InitEnemyZakoInfo(int stage_id);
 
-	void InitEnemyBossInfo();
+	void InitEnemyBossInfo(int stage_id);
 
 	// 敵のスポーン位置はプレイヤーの位置や行動に応じて決める
 	void CheckDoSpawnEnemy(const float& delta_time);
@@ -45,15 +44,19 @@ private:
 
 	Shared<EnemyZakoBox> _enemy_zakoBox = nullptr;
 
+	// Zako
 	std::vector<Shared<EnemyBase>> _enemy_zako_list;
 	std::unordered_map<int, EnemyZakoInfo> _enemyZakoData_map;
 	EnemyZakoInfo _sEnemy_zakoBox_info{};
 	EnemyZakoInfo _sEnemy_zakoDome_info{};
+	EnemyZakoInfo _sEnemy_zakoCylinder_info{};
 
+	// Boss
 	std::vector<Shared<EnemyBase>> _enemy_boss_list;
 	std::unordered_map<int, EnemyBossInfo> _enemyBossData_map;
 	EnemyBossInfo _sBoss_PatchouliKnowledge_info{};
-
+	EnemyBossInfo _sBoss_Cirno_info{};
+	EnemyBossInfo _sBoss_MoriyaSuwako_info{};
 
 
 	// 参照
@@ -69,6 +72,7 @@ private:
 
 	static int _deadCount_zakoBox ;
 
+	int _stageID{};
 
 	// 1度に生成が可能な最大数
 	int maxEnemySpawnCount_PerInterval{};
