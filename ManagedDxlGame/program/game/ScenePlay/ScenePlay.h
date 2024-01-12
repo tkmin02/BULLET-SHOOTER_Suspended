@@ -2,7 +2,7 @@
 #include "../DxLibEngine.h"
 #include "../../library/tnl_sequence.h"
 #include "../Manager/Scene/SceneBase.h"
-#include "../Loader/EnemyLoader.h"
+#include "../Loader/CsvLoader.h"
 #include "../Manager/Enemy/EnemyManager.h"
 #include "Collision/Collision.h"
 
@@ -19,16 +19,18 @@ class ScenePlay : public SceneBase
 public:
 
 	ScenePlay(){}
-	ScenePlay(std::string selected_difficulty);
+	ScenePlay(std::string selected_difficulty, int stage);
+
+	void MoveNextStage(int stage);
 
 private:
 
-	int miniMap_hdl{};
+	void RenderEnemyRadarOnMiniMap();
+	void Render() override;
+	void Update(float deltaTime) override;
 
-	tnl::Vector2i miniMap_center_pos = { 120,600 };
+private:
 
-
-	// ïœêî-----------------------------------
 	Shared<dxe::Camera> _mainCamera = nullptr;
 
 	Shared<Player> _player = nullptr;
@@ -41,9 +43,11 @@ private:
 
 	Shared<Collision> _collision = nullptr;
 
-	// ä÷êî-----------------------------------
+private:
 
-	void RenderEnemyRadarOnMiniMap();
-	void Render() override;
-	void Update(float deltaTime) override;
+	int miniMap_hdl{};
+	const std::string _DIFFICULTY{};
+
+	tnl::Vector2i miniMap_center_pos = { 120,600 };
+
 };

@@ -2,7 +2,7 @@
 #include "../DxLibEngine.h"
 
 class Player;
-class EnemyBoss;
+class EnemyBoss_PatchouliKnowledge;
 class BulletHell;
 
 
@@ -10,6 +10,7 @@ struct EnemyZakoInfo
 {
 	int _id{};
 	int _scale{};
+	int _stageID{};
 
 	int _hp{};
 	int _maxBulletSpawnCount{};
@@ -22,6 +23,7 @@ struct EnemyZakoInfo
 struct EnemyBossInfo
 {
 	int _id{};
+	int _stageID{};
 	int _scale{};
 	int _hp{};
 	int _maxBulletSpawnCount{};

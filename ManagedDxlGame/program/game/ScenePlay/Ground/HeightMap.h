@@ -5,7 +5,9 @@ class HeightMap
 {
 public:
 
-	HeightMap();
+	HeightMap(){}
+	HeightMap(int stage_id);
+
 
 	Shared<dxe::Mesh> _mesh = nullptr;
 

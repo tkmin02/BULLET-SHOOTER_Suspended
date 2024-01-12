@@ -59,21 +59,23 @@ void SceneSelectDifficulty::DecideSelectedLevel_ByInput() {
 
 	if (tnl::Input::IsKeyDownTrigger(eKeys::KB_RETURN)) {
 
+		int stage1 = 1;
+
 		if (_levelIndex == 0) {
 			auto mgr = SceneManager::GetInstance();
-			mgr->ChangeScene(new ScenePlay("Easy"));
+			mgr->ChangeScene(new ScenePlay("Easy", stage1));
 		}
 		if (_levelIndex == 1) {
 			auto mgr = SceneManager::GetInstance();
-			mgr->ChangeScene(new ScenePlay("Normal"));
+			mgr->ChangeScene(new ScenePlay("Normal", stage1));
 		}
 		if (_levelIndex == 2) {
 			auto mgr = SceneManager::GetInstance();
-			mgr->ChangeScene(new ScenePlay("Hard"));
+			mgr->ChangeScene(new ScenePlay("Hard", stage1));
 		}
 		if (_levelIndex == 3) {
 			auto mgr = SceneManager::GetInstance();
-			mgr->ChangeScene(new ScenePlay("Lunatic"));
+			mgr->ChangeScene(new ScenePlay("Lunatic", stage1));
 		}
 	}
 }
@@ -88,7 +90,7 @@ void SceneSelectDifficulty::RenderBackGround() {
 
 void SceneSelectDifficulty::Render() {
 
-	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 150);
+	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
 	RenderBackGround();
 	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 	RenderDifficultiesAndAnnotation();

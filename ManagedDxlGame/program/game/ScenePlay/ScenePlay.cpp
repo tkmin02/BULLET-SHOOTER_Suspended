@@ -1,4 +1,5 @@
 #include "ScenePlay.h"
+#include "../Manager/Scene/SceneManager.h"
 #include "../Manager/Enemy/EnemyManager.h"
 #include "Character/Enemy/EnemyZakoBox.h"
 #include "Sky/SkyBox.h"
@@ -8,7 +9,8 @@
 #include "Bullet/Enemy/EnemyBullet.h"
 
 
-ScenePlay::ScenePlay(std::string selected_difficulty) {
+
+ScenePlay::ScenePlay(std::string selected_difficulty, int stage) : _DIFFICULTY(selected_difficulty) {
 
 	// メインカメラ
 	_mainCamera = std::make_shared<dxe::Camera>(DXE_WINDOW_WIDTH, DXE_WINDOW_HEIGHT);
@@ -17,17 +19,17 @@ ScenePlay::ScenePlay(std::string selected_difficulty) {
 	_player = std::make_shared<Player>(_mainCamera);
 	_player->SetPlayerRef(_player);
 
-	// スカイボックス(天空)
-	_skyBox = std::make_shared<SkyBox>();
+	// ハイトマップ(地上) 　※ スカイボックスと相性悪いので両方は使わない
+	//_heightMap = std::make_shared<HeightMap>(stage);
 
-	// ハイトマップ(地上)
-	_heightMap = std::make_shared<HeightMap>();
+	// スカイボックス(天空)
+	_skyBox = std::make_shared<SkyBox>(stage);
 
 	// 当たり判定
 	_collision = std::make_shared<Collision>();
 
 	// 敵に関するあらゆる処理を全て管理
-	_enemyManager = std::make_shared<EnemyManager>(_player, _mainCamera, _collision, selected_difficulty);
+	_enemyManager = std::make_shared<EnemyManager>(stage, _player, _mainCamera, _collision, selected_difficulty);
 
 	// 画面左下の索敵レーダーの画像
 	miniMap_hdl = LoadGraph("graphics/miniMap/radar.jpg");
@@ -58,23 +60,47 @@ void ScenePlay::RenderEnemyRadarOnMiniMap() {
 }
 
 
+
+void ScenePlay::MoveNextStage(int stage) {
+
+	switch (stage)
+	{
+	case 2:
+	{
+		SceneManager* mgr = SceneManager::GetInstance();
+		mgr->ChangeScene(new ScenePlay(_DIFFICULTY , stage));
+
+		break;
+	}
+
+	case 3:
+	{
+		SceneManager* mgr = SceneManager::GetInstance();
+		mgr->ChangeScene(new ScenePlay(_DIFFICULTY, stage));
+
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+
+
 void ScenePlay::Render() {
 
 	_skyBox->Render(_mainCamera);
 
-	_heightMap->Render(_mainCamera);
+	//_heightMap->Render(_mainCamera);
 
 	_player->Render(_mainCamera);
 
 	_enemyManager->Render();
 
-	// グリッド線
-	DrawGridGround(_mainCamera, 100, 30);
 	
 	// ミニマップ
 	DrawRotaGraph(miniMap_center_pos.x, miniMap_center_pos.y, 0.035, 0, miniMap_hdl, 1);
 	RenderEnemyRadarOnMiniMap();
-
 }
 
 
@@ -83,7 +109,7 @@ void ScenePlay::Update(float deltaTime) {
 
 	_skyBox->Update();
 
-	_heightMap->Update();
+	//_heightMap->Update();
 
 	_enemyManager->Update(deltaTime);
 	

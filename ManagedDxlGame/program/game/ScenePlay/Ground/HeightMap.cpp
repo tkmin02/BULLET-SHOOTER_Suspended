@@ -1,13 +1,28 @@
 #include "HeightMap.h"
 
 
-HeightMap::HeightMap() {
+HeightMap::HeightMap(int stage_id) {
 
+	_mesh = dxe::Mesh::CreateFromHeightMapMV("graphics/heightMap/height_map.png", 30000, 30000, 50, 50, 50);
 
-	_mesh = dxe::Mesh::CreateFromHeightMapMV("graphics/height_map.png", 5000, 5000, 50, 50, 50);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/skybox/_skybox_a.png"));
+	switch (stage_id)
+	{
+	case 1:
+		_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/heightMap/_heightMap_c.png"));
+		break;
+	case 2:
+		_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/heightMap/_heightMap_b.png"));
+		break;
+	case 3:
+		_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/heightMap/_heightMap_a.png"));
+		break;
+	default:
+		break;
+	}
+
 	_mesh->pos_ = { 0,-500,0 };
 }
+
 
 void HeightMap::Update() {
 
@@ -15,12 +30,7 @@ void HeightMap::Update() {
 }
 
 
-
 void HeightMap::Render(Shared<dxe::Camera> camera) {
 
-
 	_mesh->render(camera);
-
 }
-
-
