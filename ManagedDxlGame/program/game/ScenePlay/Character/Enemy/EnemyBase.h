@@ -2,7 +2,7 @@
 #include <chrono>
 #include "../../../DxLibEngine.h"
 #include "../Player/Player.h"
-#include "../../../Loader/EnemyLoader.h"
+#include "../../../Loader/CsvLoader.h"
 #include "../../Bullet/Bullet.h"
 #include "../../Bullet/Enemy/EnemyBullet.h"
 #include "../../EnemyMove/EnemyMover.h"
@@ -13,14 +13,16 @@ class StraightBullet;
 
 class EnemyBase : public CollisionObject
 {
-
 public:
 
+	//-
 	EnemyBase() {}
 
 	EnemyBase(std::vector<Shared<EnemyBase>>& enemyList) {}
 
 	EnemyBase(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
+
+	EnemyBase(const EnemyBossInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 
 	virtual ~EnemyBase() = default;
 
@@ -36,23 +38,19 @@ public:
 	// ゲッター
 	float GetDistanceToPlayer();
 
-	virtual float GetRandomValue_Mt19337() const { return 0.0f; }
-
-	int GetCounter() const { return _elapsed; }
-
-	float getSpeed() const { return _charaMoveSpeed; }
-
-	float getAngle() const { return _angle; }
-
-	int   getMovePatternID() const { return _move_pattern_id; }
-
-	//　セッター
-	void  setAngle(float angle) { _angle = angle; }
+	tnl::Vector3 GetRandomPosition_Mt19337() const;
 
 	// 敵の行動パターン初期化
 	void InitEnemyMove();
 
 	void DecreaseHP(int damage);
+
+	void DecreaseBossHP(int damage);
+
+
+	virtual bool ShowHpGage_EnemyZako();
+
+	virtual bool ShowHpGage_EnemyBoss();
 
 protected:
 
@@ -65,18 +63,13 @@ protected:
 
 	virtual void InitHomingBullet() {}
 
-
-
 	// 形状、テクスチャ、ポジション、スケール
 	virtual void SetMeshInfo() {};
 
 	// 複製
 	virtual void Clone() {}
 
-
-
 	virtual void InitStraightBullet() {}
-
 
 	// プレイヤーへ照射、角度制限付きで追跡
 	virtual void ShotHomingBullet() {};
@@ -85,7 +78,6 @@ protected:
 
 	virtual float GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<Player> player) { return 0; };
 
-	virtual void LookAtPlayer(const float delta_time) {};
 
 	// 待機、追跡、攻撃などのパターンを管理し実行
 	virtual void DoRoutineMoves(float delta_time) {}
@@ -93,6 +85,12 @@ protected:
 	virtual void ChasePlayer(const float delta_time) {}
 
 	virtual void AttackPlayer(float delta_time) {}
+
+	void LookAtPlayer();
+
+	void RenderBossName();
+
+	void RenderBossRemainLife();
 
 public:
 
@@ -108,49 +106,42 @@ protected:
 
 	Shared<EnemyMover> _mover = nullptr;
 
-	// EnemyLoader.hからの参照
-	EnemyZakoInfo        _enemyInfo_ref;
-
 public:
 
 	bool _isDead = false;    //敵単体の死亡フラグ
 	bool _isAllDead = false; //敵クラス(最大生成数分)の死亡フラグ
-	bool _canShot = false;   //弾が撃てるようになったか
+	bool _canShotStraightBullet = true;   // 直行弾が撃てる状態か
+	bool _canShotHomingBullet = true;   // 直行弾が撃てるようになったか
+
 
 	// CSVからロード-----------------------
 
-	int           _id{};
-	int           _hp{};
-	int           _maxBulletSpawnCount{};
-	int           _maxTotalEnemySpawnCount{};
-	float         _charaMoveSpeed{};
-	float         _scale{};
-	std::string   _name{};
+	int            _id{};
+	int            _maxBulletSpawnCount{};
+	int            _maxTotalEnemySpawnCount{};
+	int            _hp{};
+	std::deque<int>_bossHp{};
+	float          _charaMoveSpeed{};
+	float          _scale{};
+	std::string    _name{};
+	int _MAX_HP{};
 
 	// ------------------------------------
 
 protected:
 
-	int        _score{};
-	int        _elapsed{};
-	int        _life_time_duration{};
 	int        _move_pattern_id{};  //移動パターン
-	float      _angle{}; // 自分自身の現在向いている方向の角度
-	float      _angle_to_player{}; // 自分とプレイヤーの角度差分
-
-	bool addedRandVal_posX = false;
-
-	int _int_time{};  // 出現時間
-
-	int _stop_time{}; // 停止時間
-
-	int shot_count{}; // 弾が打てるようになってからのカウント
 
 	int _life_timer{}; // 生成時に時間カウントを開始し、寿命を超えたら消滅
 
 	int _life_time_limit{}; // 敵の寿命。タイマーがこの値を超えたら敵が消滅
 
 	// 弾系--------------------------------------------------------------
-	std::chrono::steady_clock::time_point last_shot_time_straight_blt;
-	std::chrono::steady_clock::time_point last_shot_time_homing_blt;
+	unsigned int last_shot_time_straight_blt;
+	unsigned int last_shot_time_homing_blt;
+
+private:
+
+	std::stack<std::deque<int>> _remaining_life_indicator;
+
 };
