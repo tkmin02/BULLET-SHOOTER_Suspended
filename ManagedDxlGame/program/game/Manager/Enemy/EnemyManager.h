@@ -20,7 +20,7 @@ public:
 
 	EnemyManager() {}
 
-	EnemyManager(int stageID, const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty, Shared<Score>& score, int current_score);
+	EnemyManager(int stageID, const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty);
 
 	~EnemyManager() { _enemy_zako_list.clear(); }
 
@@ -35,8 +35,8 @@ private:
 
 	void InitEnemyBossInfo(int stage_id);
 
-	// 敵のスポーン位置はプレイヤーの位置や行動に応じて決める
-	void CheckDoSpawnZakoEnemy();
+	// ザコ及びボスの生成タイミングを制御
+	void CheckDoSpawnEnemy();
 
 	// ボス召喚準備
 	void SetSpawnEnemyBoss(const int stage_id);

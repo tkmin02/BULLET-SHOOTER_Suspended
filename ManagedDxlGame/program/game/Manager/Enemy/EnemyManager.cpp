@@ -13,8 +13,7 @@
 #include "../../ScenePlay/Character/EnemyBoss/EnemyBoss_PatchouliKnowledge.h"
 #include "../../ScenePlay/Character/EnemyBoss/EnemyBoss_Cirno.h"
 #include "../../ScenePlay/Character/EnemyBoss/EnemyBoss_MoriyaSuwako.h"
-#include "../../ScenePlay/Score/Score.h"
-#include <algorithm>
+#include "../../Manager/Score/ScoreManager.h"
 
 
 
@@ -25,14 +24,13 @@ int EnemyManager::_remainingZakoCylinder_spawnCount = 0;
 
 
 EnemyManager::EnemyManager(
-	int stageID, const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty, Shared<Score>& score, int current_score)
-	: _player_ref(player), _mainCamera_ref(camera), _collision_ref(collision), _score_ref(score), _SELECTED_LEVEL(difficulty), _stageID(stageID) {
+	int stageID, const Shared<Player>& player, const Shared<dxe::Camera>& camera, Shared<Collision>& collision, const std::string difficulty)
+	: _player_ref(player), _mainCamera_ref(camera), _collision_ref(collision), _SELECTED_LEVEL(difficulty), _stageID(stageID) {
 
 	_enemy_zakoBox = std::make_shared<EnemyZakoBox>();
 	_enemy_zakoDome = std::make_shared<EnemyZakoDome>();
 	_enemy_zakoCylinder = std::make_shared<EnemyZakoCylinder>();
 
-	_CURRENT_SCORE_REF = current_score;
 	// 敵のロード
 	_csvLoader = std::make_shared<CsvLoader>(difficulty);
 
@@ -99,7 +97,6 @@ void EnemyManager::InitEnemyZakoInfo(int stage_id) {
 			break;
 		}
 	}
-
 }
 
 
@@ -159,7 +156,7 @@ void EnemyManager::SetSpawnEnemyBoss(const int stage_id) {
 		boss_cirno->_name = _sBoss_Cirno_info._name;
 		boss_cirno->_scale = _sBoss_Cirno_info._scale;
 
-		_enemy_boss_list.push_back(std::make_shared<EnemyBoss_Cirno>(boss_cirno));
+		_enemy_boss_list.push_back(boss_cirno);
 	}
 	else if (stage_id == _sBoss_MoriyaSuwako_info._stageID) {
 
@@ -170,13 +167,13 @@ void EnemyManager::SetSpawnEnemyBoss(const int stage_id) {
 		boss_suwako->_name = _sBoss_MoriyaSuwako_info._name;
 		boss_suwako->_scale = _sBoss_MoriyaSuwako_info._scale;
 
-		_enemy_boss_list.push_back(std::make_shared<EnemyBoss_MoriyaSuwako>(boss_suwako));
+		_enemy_boss_list.push_back(boss_suwako);
 	}
 }
 
 
 
-void EnemyManager::CheckDoSpawnZakoEnemy() {
+void EnemyManager::CheckDoSpawnEnemy() {
 
 	switch (_stageID)
 	{
@@ -186,7 +183,7 @@ void EnemyManager::CheckDoSpawnZakoEnemy() {
 		if (_remainingZakoBox_spawnCount > 0) {
 
 			// 残りの敵スポーン回数と最大同時生成数を比較し、少ない方を使用
-			int enemiesToSpawnNow = min(_remainingZakoBox_spawnCount , maxEnemySpawnCount_PerInterval);
+			int enemiesToSpawnNow = min(_remainingZakoBox_spawnCount, maxEnemySpawnCount_PerInterval);
 
 			for (int i = 0; i < enemiesToSpawnNow; i++) {
 
@@ -206,12 +203,19 @@ void EnemyManager::CheckDoSpawnZakoEnemy() {
 		else {
 			// ザコ敵を全て倒したら
 
-			auto boss = _enemy_boss_list.begin();
-			(*boss)->Initialize();
+			static bool isInitialized = false;
+
+			if (!isInitialized) {
+
+				auto boss = _enemy_boss_list.begin();
+				(*boss)->Initialize();
+				(*boss)->InitBulletHellInstance();
+				isInitialized = true;
+			}
 
 			summon_boss = true;
 		}
-	break;
+		break;
 	}
 	case 2:
 	{
@@ -236,9 +240,15 @@ void EnemyManager::CheckDoSpawnZakoEnemy() {
 		}
 		else {
 
-			auto boss = _enemy_boss_list.begin();
-			(*boss)->Initialize();
+			static bool isInitialized = false;
 
+			if (!isInitialized) {
+
+				auto boss = _enemy_boss_list.begin();
+				(*boss)->Initialize();
+				(*boss)->InitBulletHellInstance();
+				isInitialized = true;
+			}
 			summon_boss = true;
 		}
 		break;
@@ -265,8 +275,16 @@ void EnemyManager::CheckDoSpawnZakoEnemy() {
 			_remainingZakoCylinder_spawnCount -= enemiesToSpawnNow;
 		}
 		else {
-			auto boss = _enemy_boss_list.begin();
-			(*boss)->Initialize();
+
+			static bool isInitialized = false;
+
+			if (!isInitialized) {
+
+				auto boss = _enemy_boss_list.begin();
+				(*boss)->Initialize();
+				(*boss)->InitBulletHellInstance();
+				isInitialized = true;
+			}
 
 			summon_boss = true;
 		}
@@ -290,12 +308,11 @@ void EnemyManager::SetCollisionPairList() {
 		// プレイヤーの弾とZakoエネミー各種
 		for (Shared<PlayerBullet> pb : _player_ref->_straight_bullets_p) {
 
-			if (_collision_ref->CheckCollision_PlayerBulletAndEnemy(pb, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos())) {
+			if (_collision_ref->CheckCollision_PlayerBulletAndEnemyZako(pb, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos())) {
 
 				pb->_isActive = false;
 				it->DecreaseHP(1);
-
-				_score_ref->AddScore(100);
+				ScoreManager::GetInstance().AddHitScore(100);
 			}
 		}
 		// Zakoエネミー同士の当たり判定
@@ -317,12 +334,11 @@ void EnemyManager::SetCollisionPairList() {
 		// プレイヤーの弾とBossエネミー各種
 		for (Shared<PlayerBullet> pb : _player_ref->_straight_bullets_p) {
 
-			if (_collision_ref->CheckCollision_PlayerBulletAndEnemy(pb, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos())) {
+			if (_collision_ref->CheckCollision_PlayerBulletAndEnemyBoss(pb, it, _collision_ref->COLLISION_SIZE_ZAKOBOX, _player_ref->GetPos())) {
 
 				pb->_isActive = false;
-				it->DecreaseHP(1);
-
-				_score_ref->AddScore(100);
+				it->DecreaseBossHP(1);
+				ScoreManager::GetInstance().AddHitScore(100);
 			}
 		}
 	}
@@ -425,10 +441,10 @@ void EnemyManager::Render() const {
 	if (_enemy_zako_list.empty() && !_enemy_boss_list.empty()) {
 
 		if (summon_boss) {
-		for (const auto boss : _enemy_boss_list) {
-			boss->Render(_mainCamera_ref);
-		}
 
+			for (const auto boss : _enemy_boss_list) {
+				boss->Render(_mainCamera_ref);
+			}
 		}
 	}
 }
@@ -440,7 +456,7 @@ bool EnemyManager::SeqMoveNextStage(float deltaTime) {
 	if (IsKilledStageBoss()) {
 
 		ScenePlay* sp = new ScenePlay();
-		sp->MoveNextStage(_stageID, _SELECTED_LEVEL, _CURRENT_SCORE_REF);
+		sp->MoveNextStage(_stageID, _SELECTED_LEVEL);
 		return true;
 	}
 	return false;
@@ -454,7 +470,7 @@ void EnemyManager::Update(const float& deltaTime) {
 
 	if (_enemy_zako_list.empty()) {
 
-		CheckDoSpawnZakoEnemy();
+		CheckDoSpawnEnemy();
 	}
 
 	SetCollisionPairList();
@@ -478,18 +494,18 @@ void EnemyManager::Update(const float& deltaTime) {
 	if (_enemy_zako_list.empty() && !_enemy_boss_list.empty()) {
 
 		if (summon_boss) {
-		for (auto it_boss = _enemy_boss_list.begin(); it_boss != _enemy_boss_list.end();) {
 
-			if ((*it_boss)->Update(deltaTime) == false) {
+			for (auto it_boss = _enemy_boss_list.begin(); it_boss != _enemy_boss_list.end();) {
 
-				it_boss = _enemy_boss_list.erase(it_boss);
-				summon_boss = false;
+				if ((*it_boss)->Update(deltaTime) == false) {
+
+					it_boss = _enemy_boss_list.erase(it_boss);
+					summon_boss = false;
+				}
+				else {
+					it_boss++;
+				}
 			}
-			else {
-				it_boss++;
-			}
-		}
-
 		}
 	}
 }
