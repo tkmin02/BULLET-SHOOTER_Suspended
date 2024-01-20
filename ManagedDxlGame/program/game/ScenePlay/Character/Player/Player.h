@@ -1,12 +1,12 @@
 #pragma once
 #include "../../../DxLibEngine.h"
 #include "../../Character/Enemy/EnemyBase.h"
-#include "../../../ScenePlay/Collision/Object/CollisionObject.h"
 
 class PlayerBullet;
 class EnemyBase;
+class FreeLookCamera;
 
-class Player : public CollisionObject
+class Player
 {
 public:
 
@@ -21,11 +21,12 @@ public:
     
 	Player(){}
 
-	Player(Shared<dxe::Camera> camera_ref);
+	Player(Shared<FreeLookCamera> camera_ref);
 
 
 	void Update(float delta_time);
-	void Render(Shared<dxe::Camera> playerCamera);
+	void UpdateStraightBullet(float delta_time);
+	void Render(Shared<FreeLookCamera> playerCamera);
 
 	void MoveForward(const float deltaTime);
 
@@ -38,7 +39,7 @@ public:
 
 	void AdjustPlayerVelocity();
 
-	void ControlRotationByMouse(Shared<EnemyBase> enemy);
+	void ControlRotationByMouse();
 
 	float GetDistanceToEnemy(const float& x, const float& y, const float& z);
 
@@ -46,38 +47,42 @@ public:
 
 	void ChangeTarget_ByMouseWheel();
 
+	void RenderFollowPointer();
+
 
 	void ActivateDarkSoulsCamera();
+
+	void ControlCameraWithoutEnemyFocus(tnl::Vector3& player_pos);
 
 	const tnl::Vector3 GetPos() const   { return _mesh->pos_; }
 	void SetPos(const tnl::Vector3 pos) { _mesh->pos_ = pos; }
 
 	// 管理するエネミーのリストの参照用
-	void SetEnemiesListRef_ClassP(std::vector<Shared<EnemyBase>> enemies_list_ref);
+	void SetEnemiesListRef_ClassP(std::vector<Shared<EnemyBase>> enemy_list_ref);
 	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
 
 
 	const tnl::Vector3 GetTargetsScreenCoordinates(const float& x, const float& y, const float& z);
 
+private:
+
+	bool IsEnemyInCapturableRange();
 
 public:
 
 	Shared<dxe::Mesh> _mesh = nullptr;
 	std::list<Shared<PlayerBullet>> _straight_bullets_p;
 
+	tnl::Vector3 collide_size{};
 
 private:
-
-	void ConstraintMovableCoords(const float& x, const float& y, const float& z);
-
-	tnl::Quaternion ClampRotation(tnl::Quaternion quaternion);
-
 
 	tnl::PointsLerp* points = nullptr;
 	std::vector<tnl::Vector3> positions;
 
 	Shared<Player> _player_ref = nullptr;
-	Shared<dxe::Camera> _mainCamera_ref = nullptr;
+	Shared<FreeLookCamera> _mainCamera_ref = nullptr;
+
 	Shared<EnemyBase> _enemy_ref = nullptr;
 	std::vector <Shared<EnemyBase>> _enemies_list_ref{};
 

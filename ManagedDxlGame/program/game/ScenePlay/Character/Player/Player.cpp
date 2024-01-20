@@ -2,6 +2,7 @@
 #include "../../Bullet/Player/PlayerBullet.h"
 #include "../../Sky/SkyBox.h"
 #include "../../ScenePlay.h"
+#include "../../Camera/FreeLookCamera.h"
 
 // CreateClone()
 
@@ -12,16 +13,18 @@
 //　また、半透明なオブジェクトどうしであれば、カメラから距離が遠い順に先に描画する
 
 
-Player::Player(Shared<dxe::Camera> camera_ref) {
 
-	_mesh = dxe::Mesh::CreateSphere(18, 10, 10, false);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/pexels-mikke-house-518917.copy.jpg"));
+Player::Player(Shared<FreeLookCamera> camera_ref) {
+
+	_mesh = dxe::Mesh::CreateSphereMV(20, 10, 10, false);
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/playerTexture.jpg"));
 	_mesh->scl_ = { 1.0f, 1.0f, 1.0f };
 	_mesh->pos_ = { 0, 100, -300 };
 
-
 	_mesh->setBlendMode(DX_BLENDMODE_ADD);
-	_mesh->setAlpha(0.1f);
+	_mesh->setAlpha(0.5f);
+
+	collide_size = { 20, 10, 10 };
 
 	_mainCamera_ref = camera_ref;
 }
@@ -130,7 +133,6 @@ const tnl::Vector3 Player::GetTargetsScreenCoordinates(const float& x, const flo
 
 void Player::ChangeTarget_ByMouseWheel() {
 
-
 	int wheel = tnl::Input::GetMouseWheel();
 
 	// マウスホイールの入力に応じて敵のインデックスを増減
@@ -146,7 +148,12 @@ void Player::ChangeTarget_ByMouseWheel() {
 			_enemy_index = _enemies_list_ref.size() - 1;
 		}
 	}
+}
 
+
+
+void Player::RenderFollowPointer()
+{
 	// インデックスが置かれている敵のみイテレーターで取得
 	auto it = std::next(_enemies_list_ref.begin(), _enemy_index);
 
@@ -164,148 +171,115 @@ void Player::ChangeTarget_ByMouseWheel() {
 			, _mainCamera_ref->proj_
 		);
 
-
 		// 追従ポインター描画
 		GetTargetsScreenCoordinates(enemy_pos.x, enemy_pos.y, enemy_pos.z);
 		DrawCircleAA(screen_pos.x, screen_pos.y, 5, 10, GetColor(255, 0, 0), 1, 1);
-
-		DrawFormatString(130, 0, -1, "enemy_index");
-		DrawFormatString(150, 15, -1, "%d", _enemy_index);
 	}
 }
 
 
-void Player::ConstraintMovableCoords(const float& enemy_x, const float& enemy_y, const float& enemy_z) {
+bool Player::IsEnemyInCapturableRange() {
 
+	tnl::Vector3 player_pos = _mesh->pos_;
 
-	if ( // 右方向制限
-		abs(enemy_x - _mesh->pos_.x) > 225 &&
-		_mesh->pos_.x > 0 &&
-		!tnl::Input::IsKeyDown(eKeys::KB_A)
-		)
-	{
-		_mesh->pos_.x = 225;
+	for (auto it_eneList_ref = _enemies_list_ref.begin(); it_eneList_ref != _enemies_list_ref.end(); it_eneList_ref++) {
+
+		tnl::Vector3 target_enemy_pos = (*it_eneList_ref)->_mesh->pos_;
+		float dis_player_enemy = (target_enemy_pos - player_pos).length();
+		if (dis_player_enemy < 500) {
+			return true;
+		}
 	}
-
-	if ( // 左方向制限
-		abs(enemy_x - _mesh->pos_.x) > 225 &&
-		_mesh->pos_.x < 0 &&
-		!tnl::Input::IsKeyDown(eKeys::KB_D)
-		)
-	{
-		_mesh->pos_.x = -140;
-	}
-
-
-	if ( // 上方向制限
-		abs(enemy_y - _mesh->pos_.y) > 240 &&
-		_mesh->pos_.y > 0 &&
-		!tnl::Input::IsKeyDown(eKeys::KB_S)
-		)
-	{
-		_mesh->pos_.y = 240;
-	}
-
-
-	if ( // 下方向制限
-		abs(enemy_y - _mesh->pos_.y) > 165 &&
-		_mesh->pos_.y < 0 &&
-		!tnl::Input::IsKeyDown(eKeys::KB_W)
-		)
-	{
-		_mesh->pos_.y = -80;
-	}
-
-
-	if (abs(enemy_z - _mesh->pos_.z) > 370)  _mesh->pos_.z = 370;
+	return false;
 }
-
-
-
 
 
 void Player::ActivateDarkSoulsCamera() {
 
-	float to_target_distance_ = 80;
-
-	// Spaceで追従カメラON
-
-	ChangeTarget_ByMouseWheel();
-
+	tnl::Vector3 player_pos = _mesh->pos_;
 
 	for (auto it_eneList_ref = _enemies_list_ref.begin(); it_eneList_ref != _enemies_list_ref.end(); it_eneList_ref++) {
-
-		tnl::Vector3 player_pos = _mesh->pos_;
 
 		tnl::Vector3 target_enemy_pos = (*it_eneList_ref)->_mesh->pos_;
 		float dis_player_enemy = (target_enemy_pos - player_pos).length();
 
-		if (dis_player_enemy < 500) {
+		if (_mainCamera_ref->follow) {
 
-			if (_mainCamera_ref->follow) {
+			// 追従ポインターON（描画）
+			_mainCamera_ref->isShowTargetPointer = true;
 
-				tnl::Vector3 tmp{};
-				tmp.y = player_pos.y - 40;
+			ChangeTarget_ByMouseWheel();
+			RenderFollowPointer();
 
-				// カメラをプレイヤーと敵の中間地点に固定
-				_mainCamera_ref->target_ = (tmp + target_enemy_pos) / 2;
+			tnl::Vector3 tmp{};
+			tmp.y = player_pos.y - 70;
 
-				tnl::Vector3 cameraOffset = { 0, 0, -200 };
-				tnl::Vector3 cameraPos = player_pos + cameraOffset;
-				// カメラの位置 = プレイヤー座標 + (normalized(プレイヤー座標 - 敵座標) * カメラとプレイヤーの差分)
-				// ただし、単純にプレイヤーの座標を使うとプレイヤーとエネミーが重なってしまうため、差分を使う
+			// カメラをプレイヤーと敵の中間地点に固定
+			_mainCamera_ref->target_ = (tmp + target_enemy_pos) / 2;
 
-				 //左方向
-				if (tnl::Input::IsKeyDown(eKeys::KB_A)) {
-
-					_mainCamera_ref->axis_y_angle_ += tnl::ToRadian(0.75);
-				}
-
-				// 右方向
-				if (tnl::Input::IsKeyDown(eKeys::KB_D)) {
-
-					_mainCamera_ref->axis_y_angle_ -= tnl::ToRadian(0.75);
-				}
+			tnl::Vector3 cameraOffset = { 0, 0, -200 };
+			tnl::Vector3 cameraPos = player_pos + cameraOffset;
+			// カメラの位置 = プレイヤー座標 + (normalized(プレイヤー座標 - 敵座標) * カメラとプレイヤーの差分)
+			// ただし、単純にプレイヤーの座標を使うとプレイヤーとエネミーが重なってしまうため、差分を使う
 
 
-				tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
-				tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
+			tnl::Quaternion q = tnl::Quaternion::RotationAxis({ 0,1,0 }, _mainCamera_ref->axis_y_angle_);
+			tnl::Vector3 xz = tnl::Vector3::TransformCoord({ 0,0,1 }, q);
 
-				tnl::Vector3 local_axis_x = tnl::Vector3::Cross({ 0,1,0 }, xz);
-				q *= tnl::Quaternion::RotationAxis(local_axis_x, _mainCamera_ref->axis_x_angle_);
+			tnl::Vector3 local_axis_x = tnl::Vector3::Cross({ 0,1,0 }, xz);
+			q *= tnl::Quaternion::RotationAxis(local_axis_x, _mainCamera_ref->axis_x_angle_);
 
-				_mesh->pos_ = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, -30, -to_target_distance_ }, q);
-				_mesh->rot_ = tnl::Quaternion::LookAt(player_pos, target_enemy_pos, local_axis_x);
+			_mesh->rot_ = tnl::Quaternion::LookAt(player_pos, target_enemy_pos, local_axis_x);
 
-				_mainCamera_ref->pos_ = cameraPos;
+			//左方向
+			if (tnl::Input::IsKeyDown(eKeys::KB_A)) {
 
-				// カメラの動きの遅延処理
-				tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ _player_behind_cameraX, 100, -150 }, _mesh->rot_);
-				_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
+				tnl::Vector3 new_pos = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, 0, -150 }, q);
+				new_pos.y = _mesh->pos_.y;
 
-				// 追従ポインターON
-				_mainCamera_ref->isShowTargetPointer = true;
+				_mesh->pos_ = new_pos;
+				_mainCamera_ref->axis_y_angle_ += tnl::ToRadian(2);
 			}
-			else {
 
-				tnl::Vector3 _camera_offset = { 0, -50, 20 };
+			// 右方向
+			if (tnl::Input::IsKeyDown(eKeys::KB_D)) {
 
-				// 敵にカメラを固定しない場合
-				_mainCamera_ref->target_ = player_pos;
-				_mainCamera_ref->target_ -= _camera_offset;
+				tnl::Vector3 new_pos = _mainCamera_ref->target_ + tnl::Vector3::TransformCoord({ 0, 0, -150 }, q);
+				new_pos.y = _mesh->pos_.y;
 
-				ControlRotationByMouse((*it_eneList_ref));
-
-
-				// カメラの動きの遅延処理
-				tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ 0, 100, -150 }, _mesh->rot_);
-				_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
-
-				// 追従ポインターOFF
-				_mainCamera_ref->isShowTargetPointer = false;
+				_mesh->pos_ = new_pos;
+				_mainCamera_ref->axis_y_angle_ -= tnl::ToRadian(2);
 			}
+
+
+			// カメラの動きの遅延処理
+			tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ _player_behind_cameraX, 100, -150 }, _mesh->rot_);
+			_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
 		}
 	}
+
+	ControlCameraWithoutEnemyFocus(player_pos);
+}
+
+
+
+
+void Player::ControlCameraWithoutEnemyFocus(tnl::Vector3& player_pos)
+{
+	tnl::Vector3 _camera_offset = { 0, -50, 20 };
+
+	// 敵にカメラを固定しない場合
+	_mainCamera_ref->target_ = player_pos;
+	_mainCamera_ref->target_ -= _camera_offset;
+
+	ControlRotationByMouse();
+
+	// カメラの動きの遅延処理
+	tnl::Vector3 fix_pos = player_pos + tnl::Vector3::TransformCoord({ 0, 100, -150 }, _mesh->rot_);
+	_mainCamera_ref->pos_ += (fix_pos - _mainCamera_ref->pos_) * 0.1f;
+
+	// 追従ポインターOFF
+	_mainCamera_ref->isShowTargetPointer = false;
 }
 
 
@@ -352,40 +326,20 @@ void Player::ControlMainCameraPos(const CameraPos enum_camera_pos) {
 
 
 
-void Player::ControlRotationByMouse(Shared<EnemyBase> enemy) {
-
-	tnl::Vector3 vel = tnl::Input::GetMouseVelocity();
-
-	// 左右視点
-	rot_y_ *= tnl::Quaternion::RotationAxis({ 0, 1, 0 }, tnl::ToRadian(vel.x * 0.05f));
-
-	//// 上下視点も有効化する場合はアンコメント
-	//tnl::Vector3 forward = tnl::Vector3::TransformCoord({ 0, 0, 1 }, rot_y_);
-	//rot_x_ *= tnl::Quaternion::RotationAxis(tnl::Vector3::Cross({ 0, 1, 0 }, forward), tnl::ToRadian(vel.y * 0.01f));
-}
+void Player::ControlRotationByMouse() {
 
 
+	if (!_mainCamera_ref->follow) {
 
-tnl::Quaternion Player::ClampRotation(tnl::Quaternion quaternion) {
+		tnl::Vector3 vel = tnl::Input::GetMouseVelocity();
 
-	// X軸方向の回転を使う
+		// 左右視点
+		rot_y_ *= tnl::Quaternion::RotationAxis({ 0, 1, 0 }, tnl::ToRadian(vel.x * 0.05f));
 
-	const float radian = 57.29578f;
-	const float degree = 0.0174532924f;
-	const float minX = -90.0f;
-	const float minY = 90.0f;
-
-	quaternion.w = 1;
-
-	quaternion.x = quaternion.w;
-	quaternion.y = quaternion.w;
-	quaternion.z = quaternion.w;
-
-	float angleX = std::atan(quaternion.x) * radian * 2.f;
-	angleX = std::clamp(angleX, minX, minY);
-
-	quaternion.x = std::atan(angleX * degree * 0.5f);
-	return quaternion;
+		// 上下視点
+		tnl::Vector3 forward = tnl::Vector3::TransformCoord({ 0, 0, 1 }, rot_y_);
+		rot_x_ *= tnl::Quaternion::RotationAxis(tnl::Vector3::Cross({ 0, 1, 0 }, forward), tnl::ToRadian(vel.y * 0.01f));
+	}
 }
 
 
@@ -400,17 +354,6 @@ void Player::ShotPlayerBullet() {
 		spawn_pos.x += _mesh->rot_.x;
 		spawn_pos.y += _mesh->rot_.y;
 		spawn_pos.z += _mesh->rot_.z;
-
-		tnl::Vector3 temp = tnl::Vector3::CreateScreenRay
-		(
-
-			targets_screen_coords.x,
-			targets_screen_coords.y,
-			DXE_WINDOW_WIDTH,
-			DXE_WINDOW_HEIGHT,
-			_mainCamera_ref->view_,
-			_mainCamera_ref->proj_
-		);
 
 		_straight_bullets_p.emplace_back(std::make_shared<PlayerBullet>(spawn_pos, move_dir, _player_ref));
 	}
@@ -434,9 +377,10 @@ void Player::AdjustPlayerVelocity() {
 		rot_xz_ = tnl::Quaternion::RotationAxis(tnl::Vector3::Cross(upper, { 0, 1, 0 }), -(angle * 0.2f));
 	}
 
+
 	// 最終的な姿勢
 	_mesh->rot_ = rot_y_ * rot_xz_;
-
+	// ControlRotationByMouse で上下視点も使用する場合は↓を使う
 	_mesh->rot_ = rot_y_ * rot_x_ * rot_xz_;
 }
 
@@ -449,21 +393,29 @@ void Player::Update(float delta_time) {
 	ActivateDarkSoulsCamera();
 
 	// 右マウスが押されたら、カメラを敵に固定するフラグを反転
-	if (tnl::Input::IsMouseTrigger(eMouseTrigger::IN_RIGHT)) {
+	if (tnl::Input::IsMouseTrigger(eMouseTrigger::IN_RIGHT) && IsEnemyInCapturableRange()) {
 		_mainCamera_ref->follow = !_mainCamera_ref->follow;
 	}
 
 
-	_mainCamera_ref->Update();
-
+	_mainCamera_ref->Update(delta_time);
+	_mainCamera_ref->ControlFreeLookCamera(_mainCamera_ref, _mesh);
 
 	MoveForward(delta_time);
+
 
 	ShotPlayerBullet();
 
 
 	AdjustPlayerVelocity();
 
+	UpdateStraightBullet(delta_time);
+}
+
+
+
+void Player::UpdateStraightBullet(float delta_time)
+{
 	auto it_blt = _straight_bullets_p.begin();
 
 	while (it_blt != _straight_bullets_p.end()) {
@@ -480,30 +432,9 @@ void Player::Update(float delta_time) {
 
 
 
-void Player::Render(Shared<dxe::Camera> camera) {
+void Player::Render(Shared<FreeLookCamera> camera) {
 
 	_mesh->render(camera);
 
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 5, -1, "PlayerPos");
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 20, -1, "%f", _mesh->pos_.x);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 40, -1, "%f", _mesh->pos_.y);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 60, -1, "%f", _mesh->pos_.z);
-
-
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 80, -1, "PlayerRot");
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 100, -1, "%f", _mesh->rot_.x);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 120, -1, "%f", _mesh->rot_.y);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 140, -1, "%f", _mesh->rot_.z);
-
-
-
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 160, -1, "CameraPos");
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 180, -1, "%f", _mainCamera_ref->pos_.x);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 200, -1, "%f", _mainCamera_ref->pos_.y);
-	DrawFormatString(DXE_WINDOW_WIDTH - 100, 220, -1, "%f", _mainCamera_ref->pos_.z);
-
-
-	for (auto blt : _straight_bullets_p) {
-		blt->Render(camera);
-	}
+	for (auto blt : _straight_bullets_p) blt->Render(camera);
 }
