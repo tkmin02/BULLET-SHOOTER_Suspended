@@ -1,6 +1,7 @@
 #include "BulletHell.h"
 #include "BulletHellFactory.h"
 #include "../../../DxLibEngine.h"
+#include <random>
 
 BulletHellFactory::BulletHellFactory() {
 
@@ -39,94 +40,117 @@ void BulletHellFactory::InitBulletHellInfo() {
 }
 
 
-Shared<BulletHell> BulletHellFactory::CreateBulletHell_SilentSerena(const Shared<dxe::Mesh>& bossMesh_ref) {
+std::list<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_SilentSerena() {
 
-	Shared<BulletHell> bulletHell = std::make_shared<BulletHell>();
+	std::list<Shared<EnemyBullet>> enemyBullet;
 
-	int bulletNum = 180;
+	std::random_device rd;
+	std::mt19937 mt(rd());
 
-	for (int i = 0; i < bulletNum; i++) {
+	int circle_contiguous_bulletNum = 180;
+	for (int i = 0; i < circle_contiguous_bulletNum; i++) {
 
-		float theta = i * (2.f * tnl::PI / bulletNum);
-		float pi = tnl::PI / 4;
-
-
-		tnl::Vector3 bulletPos;
-		bulletPos.x = bossMesh_ref->pos_.x + cos(theta) * sin(pi);
-		bulletPos.y = bossMesh_ref->pos_.y + sin(theta) * sin(pi);
-		bulletPos.z = bossMesh_ref->pos_.z + cos(pi);
+		std::uniform_real_distribution<float> dist_x(-180.0, 180.0);
+		std::uniform_real_distribution<float> dist_y(-50.0, 200.0);
+		std::uniform_real_distribution<float> dist_z(-180.0, 180.0);
 
 		Shared<EnemyBullet> bullet = std::make_shared<EnemyBullet>(EnemyBullet::COLOR::EmeraldGreen);
 
-		bullet->SetPosition(bulletPos);
-		bulletHell->AddBullet(bullet);
+		bullet->_mesh->pos_.x = bullet->_mesh->pos_.x + dist_x(mt);
+		bullet->_mesh->pos_.y = bullet->_mesh->pos_.y + dist_y(mt);
+		bullet->_mesh->pos_.z = bullet->_mesh->pos_.z + dist_z(mt);
+
+		bullet->_id = i;
+		bullet->color = EnemyBullet::COLOR::EmeraldGreen;
+
+		enemyBullet.push_back(bullet);
 	}
 
 
-	return bulletHell;
+	int slowly_coming_bulletNum = 50;
+	for (int i = 0; i < slowly_coming_bulletNum; i++) {
+
+		std::uniform_real_distribution<float> dist_x(-180.0, 180.0);
+		std::uniform_real_distribution<float> dist_y(-50.0, 100.0);
+		std::uniform_real_distribution<float> dist_z(-180.0, 180.0);
+
+		Shared<EnemyBullet> bullet = std::make_shared<EnemyBullet>(EnemyBullet::COLOR::Blue);
+
+		bullet->_mesh->pos_.x = bullet->_mesh->pos_.x + dist_x(mt);
+		bullet->_mesh->pos_.y = bullet->_mesh->pos_.y + dist_y(mt);
+		bullet->_mesh->pos_.z = bullet->_mesh->pos_.z + dist_z(mt);
+
+		bullet->_id = i;
+		bullet->color = EnemyBullet::COLOR::Blue;
+
+		enemyBullet.push_back(bullet);
+	}
+
+	return enemyBullet;
 }
 
 
-Shared<BulletHell> BulletHellFactory::CreateBulletHell_PerfectFreeze(const Shared<dxe::Mesh>& bossMesh_ref) {
-	Shared<BulletHell> bulletHell = std::make_shared<BulletHell>();
+
+Shared<EnemyBullet> BulletHellFactory::ReuseBulletHellsBullet_SilentSerena(std::map<int, Shared<EnemyBullet>> bltHellsBlt_map, int id) {
+
+	// bulletHellBulletMapì‡Ç…ÉLÅ[Ç™idÇ≈Ç†ÇÈóvëfÇ™å©Ç¬Ç©ÇÁÇ»Ç©Ç¡ÇΩèÍçá
+	if (bltHellsBlt_map.find(id) == bltHellsBlt_map.end()) {
+
+		Shared<EnemyBullet> bulletHell = std::make_shared<EnemyBullet>(id);
+		bltHellsBlt_map[id] = bulletHell;
+	}
+
+	return bltHellsBlt_map[id];
+}
+
+
+
+Shared<EnemyBullet> BulletHellFactory::GetBulletHellsBullet(std::map<int, Shared<EnemyBullet>> bltHellsBlt_map, int id) {
+
+	// íeÇ™ãÛÇÃÇ∆Ç´ÇÃÇ›ê∂ê¨Ç∑ÇÈ
+	if (bltHellsBlt_map.find(id) != bltHellsBlt_map.end()) {
+		return bltHellsBlt_map[id];
+	}
+	return nullptr;
+}
+
+
+
+std::list<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_PerfectFreeze() {
+	std::list<Shared<EnemyBullet>> enemyBullet;
+	Shared<EnemyBullet> bullet = std::make_shared<EnemyBullet>();
+	return enemyBullet;
+}
+
+
+std::list<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm() {
+
+	std::list<Shared<EnemyBullet>> enemyBullet;
 
 	Shared<EnemyBullet> bullet = std::make_shared<EnemyBullet>();
-	return bulletHell;
+	return enemyBullet;
 
 }
 
 
-Shared<BulletHell> BulletHellFactory::CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm(const Shared<dxe::Mesh>& bossMesh_ref) {
-	Shared<BulletHell> bulletHell = std::make_shared<BulletHell>();
 
-	Shared<EnemyBullet> bullet = std::make_shared<EnemyBullet>();
-	return bulletHell;
-
-}
-
-
-//Shared<BulletHell> BulletHellFactory::ReuseBulletHell_SilentSerena(int id) {
-//
-//	// bulletHellMapì‡Ç…ÉLÅ[Ç™idÇ≈Ç†ÇÈóvëfÇ™å©Ç¬Ç©ÇÁÇ»Ç©Ç¡ÇΩèÍçá
-//	if (bulletHellMap.find(id) == bulletHellMap.end()) {
-//
-//		Shared<BulletHell> bulletHell = std::make_shared<BulletHell>(id);
-//		bulletHellMap[id] = bulletHell;
-//	}
-//
-//	return bulletHellMap[id];
-//}
-
-
-
-Shared<BulletHell> BulletHellFactory::CreateBulletHell(const BulletHell::TYPE type, const Shared<dxe::Mesh>& bossMesh_ref) {
+std::list<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell(const BulletHell::TYPE type) {
 
 	switch (type)
 	{
 	case BulletHell::TYPE::Silent_Serena:
-		return CreateBulletHell_SilentSerena(bossMesh_ref);
+		return CreateBulletHell_SilentSerena();
 
 		break;
 	case BulletHell::TYPE::Perfect_Freeze:
-		return CreateBulletHell_PerfectFreeze(bossMesh_ref);
+		return CreateBulletHell_PerfectFreeze();
 
 		break;
 	case BulletHell::TYPE::KeroChan_StandsFirm_AgainstTheStorm:
-		return CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm(bossMesh_ref);
+		return CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm();
 
 		break;
 	default:
 		break;
 	}
 }
-
-
-
-//Shared<BulletHell> BulletHellFactory::GetBulletHell(int id) {
-//
-//	// íeÇ™ãÛÇÃÇ∆Ç´ÇÃÇ›ê∂ê¨Ç∑ÇÈ
-//	//if (bulletHellMap.find(id) != bulletHellMap.end()) {
-//	//	return bulletHellMap[id];
-//	//}
-//	//return nullptr;
-//}

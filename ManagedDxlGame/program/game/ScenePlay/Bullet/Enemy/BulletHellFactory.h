@@ -12,13 +12,11 @@ public:
 
 	void InitBulletHellInfo();
 
-	Shared<BulletHell> CreateBulletHell(const BulletHell::TYPE type, const Shared<dxe::Mesh>& bossMesh_ref);
+	std::list<Shared<EnemyBullet>> CreateBulletHell(const BulletHell::TYPE type);
 
+	Shared<EnemyBullet> ReuseBulletHellsBullet_SilentSerena(std::map<int, Shared<EnemyBullet>> bltHellsBlt_map,int id);
 
-	//Shared<BulletHell> ReuseBulletHell_SilentSerena(int id);
-
-
-	//Shared<BulletHell> GetBulletHell(int id);
+	Shared<EnemyBullet> GetBulletHellsBullet(std::map<int, Shared<EnemyBullet>> bltHellsBlt_map, int id);
 
 private:
 
@@ -26,7 +24,7 @@ private:
 	//  ※ (パチュリー専用)
 	// 円形連続発射と、ランダムにゆっくり落ちてくる弾を組み合わせた弾幕
 	//// </summary>
-	Shared<BulletHell> CreateBulletHell_SilentSerena(const Shared<dxe::Mesh>& bossMesh_ref);
+	std::list<Shared<EnemyBullet>> CreateBulletHell_SilentSerena();
 
 	//// <summary>
 	//  ※ (チルノ専用)
@@ -35,14 +33,14 @@ private:
 	// 3.自機依存された８方向ショットを連続でうつ
 	// 4.止めていた弾を全方向で動かし始める
 	//// </summary>
-	Shared<BulletHell> CreateBulletHell_PerfectFreeze(const Shared<dxe::Mesh>& bossMesh_ref);
+	std::list<Shared<EnemyBullet>> CreateBulletHell_PerfectFreeze();
 
 	//// <summary>
 	//　※ (諏訪子専用)
 	//　1.上に向かって8way弾を撃つ
 	//　2.徐々に下向きに加速していく
 	//// </summary>
-	Shared<BulletHell> CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm(const Shared<dxe::Mesh>& bossMesh_ref);
+	std::list<Shared<EnemyBullet>> CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm();
 
 private:
 
@@ -54,10 +52,5 @@ private:
 	BulletHellType_Info _sBltHell_cirno_info{};
 	BulletHellType_Info _sBltHell_suwako_info{};
 
-
-
 	std::unordered_map<int, BulletHellType_Info> _bulletHellData_map;
-
-	//std::map<int, Shared<BulletHell>> bulletHellMap;
 };
-

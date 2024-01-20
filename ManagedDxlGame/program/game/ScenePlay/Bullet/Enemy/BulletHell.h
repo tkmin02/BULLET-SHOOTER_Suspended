@@ -27,9 +27,10 @@ public:
 	void Clear();
 
 
-	void ShotBulletHell_SilentSerena();
-	void ShotBulletHell_PerfectFreeze();
-	void ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm();
+	void ShotBulletHell_SilentSerena(const float& delta_time);
+	void CheckLifeTimeDistance(Shared<EnemyBullet>& it_bltHell);
+	void ShotBulletHell_PerfectFreeze(const float& delta_time);
+	void ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm(const float& delta_time);
 
 
 	void Render(Shared<dxe::Camera> _mainCamera) override;
@@ -44,6 +45,7 @@ public:
 private:
 
 	const Shared<dxe::Mesh> _bossMesh_ref = nullptr;
+	std::map<int, Shared<EnemyBullet>> _bltHellsBlt_map;
 
 public:
 
