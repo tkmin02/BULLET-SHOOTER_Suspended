@@ -6,7 +6,7 @@
 
 
 class HomingBullet;
-
+class BulletFactory;
 
 class EnemyZakoBox : public EnemyBase
 {
@@ -25,24 +25,21 @@ public:
 	// 変換コンストラクタ
 	EnemyZakoBox(const EnemyZakoInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 	
+	void  InitBulletFactoryInstance() override;
 
 private:
 
 	// 弾系----------------------------------------------------------------
 
-	void UpdateStraightBullet(const float delta_time) override;
-
-	void InitStraightBullet() override;
+	void ShotStraightBullet(const float& delta_time);
 
 	void UpdateHomingBullet(const float delta_time) override;
 
 	void InitHomingBullet() override;
 
+	void EraseInvalidBullet() override;
+
 	//----------------------------------------------------------------------
-
-	tnl::Vector3 CalcVecFromAngle(float angle) override;
-
-	float GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<Player> player) override;
 
 	bool Update(float delta_time) override;
 
@@ -66,13 +63,17 @@ public:
 
 private:
 
+	Shared<BulletFactory> _bulletFactory = nullptr;
+
+	std::list<Shared<StraightBullet>> _straightBullet;
+
+private:
+
 	tnl::Vector3 prev_pos;
 
 	int straight_bullet_count;
 	int homing_bullet_count;
 
-
-	const int INIT_BULLET_NUM = 3;
 
 	const float _IDLE_DISTANCE = 500.0f;
 	const float _ATTACK_DISTANCE = 450.0f;

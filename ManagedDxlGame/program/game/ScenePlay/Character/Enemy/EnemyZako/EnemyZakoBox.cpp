@@ -3,6 +3,7 @@
 #include "../../../Bullet/Enemy/StraightBullet.h"
 #include "../../../Bullet/Enemy/HomingBullet.h"
 #include "../../../EnemyMove/EnemyMover.h"
+#include "../../../Bullet/Enemy/BulletFactory.h"
 
 
 std::list<Shared<StraightBullet>> EnemyZakoBox::_straight_bullets_zakoBox;
@@ -13,6 +14,7 @@ std::list<Shared<HomingBullet>> EnemyZakoBox::_homing_bullets_zakoBox;
 EnemyZakoBox::EnemyZakoBox(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera)
 	: EnemyBase(data, player, camera), straight_bullet_count(0), homing_bullet_count(0)
 {
+
 	_explode_particle = std::make_shared<dxe::Particle>("particle/preset/explosion.bin");
 
 	collide_size = { 30,30,30 };
@@ -24,46 +26,22 @@ void EnemyZakoBox::SetMeshInfo() {
 
 	tnl::Vector3 meshSize = { 20,20,20 };
 	_mesh = dxe::Mesh::CreateBoxMV(meshSize,
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"),
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"),
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"),
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"),
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"),
-		dxe::Texture::CreateFromFile("graphics/colorTexture/red1.bmp"));
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"),
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"),
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"),
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"),
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"),
+		dxe::Texture::CreateFromFile("graphics/colorTexture/red.bmp"));
 
-
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/box.bmp"));
 	_mesh->pos_ = GetRandomPosition_Mt19337();
 	_mesh->scl_ = { 1.0f, 1.0f, 1.0f };
 }
 
 
 
+void  EnemyZakoBox::InitBulletFactoryInstance() {
 
-
-tnl::Vector3 EnemyZakoBox::CalcVecFromAngle(float angle) {
-
-	tnl::Vector3 temp;
-
-	temp.x = sin(angle);
-	temp.y = -cos(angle);
-
-	return temp;
-}
-
-
-
-float EnemyZakoBox::GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<Player> player) {
-
-	//　外積・内積は２つのベクトルの相対角度とは関係がないので使わない
-
-	float dx = player->_mesh->pos_.x - enemy->pos_.x;
-	float dy = player->_mesh->pos_.y - enemy->pos_.y;
-
-	// プレイヤーとエネミーの位置の相対角度を求める
-	float angle = atan2(dy, dx);
-
-	return angle;
+	_bulletFactory = std::make_shared<BulletFactory>(_mesh);
 }
 
 
@@ -81,7 +59,6 @@ void EnemyZakoBox::DoRoutineMoves(float delta_time) {
 	else if (GetDistanceToPlayer() < _ATTACK_DISTANCE) {
 
 		AttackPlayer(delta_time);
-		_canShotStraightBullet = false;
 
 	}
 	// アイドル状態
@@ -108,13 +85,8 @@ void EnemyZakoBox::ChasePlayer(const float delta_time) {
 }
 
 
-float elapsed_time = 0.0f;
 
 void EnemyZakoBox::AttackPlayer(const float& delta_time) {
-
-	float time_limit = 5.0f;
-
-	elapsed_time = 0.0f;
 
 
 	int randValue = rand() % 2;
@@ -123,15 +95,8 @@ void EnemyZakoBox::AttackPlayer(const float& delta_time) {
 	{
 	case 0:
 	{
-		straight_bullet_count++;
-
-		for (int i = 0; i < INIT_BULLET_NUM; i++) {
-
-			InitStraightBullet();
-			elapsed_time += delta_time;
-			elapsed_time = (elapsed_time > time_limit) ? time_limit : elapsed_time;
-		}
-		UpdateStraightBullet(delta_time);
+		ShotStraightBullet(delta_time);
+		EraseInvalidBullet();
 
 		break;
 	}
@@ -158,41 +123,36 @@ void EnemyZakoBox::AttackPlayer(const float& delta_time) {
 
 
 
-void EnemyZakoBox::InitStraightBullet() {
 
-	// 発射位置を自分の正面に設定
-	tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
+void EnemyZakoBox::ShotStraightBullet(const float& delta_time) {
 
-	tnl::Vector3 spawn_pos = _mesh->pos_;
-	spawn_pos.x += _mesh->rot_.x;
-	spawn_pos.y += _mesh->rot_.y;
-	spawn_pos.z += _mesh->rot_.z;
-	spawn_pos.z -= 30;
-
-	spawn_pos += move_dir * 20;
+	straight_bullet_count++;
 
 
-	auto it = std::make_shared<StraightBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED);
+	if (straight_bullet_count % 50 == 0) {
 
-	if (it->_isActive || straight_bullet_count % 20 != 0) return;
+		_straight_bullets_zakoBox = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox);
+		straight_bullet_count = 0;
+	}
 
-	it->_isActive = true;
+	for (auto it_straight_bullet : _straight_bullets_zakoBox) {
 
+		if (it_straight_bullet->_isActive) {
+			tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
+			it_straight_bullet->_mesh->pos_ += move_dir * delta_time * 500;
 
-	_straight_bullets_zakoBox.push_back(it);
-
-	straight_bullet_count = 0;
+			it_straight_bullet->CheckLifeTimeDistance(it_straight_bullet);
+		}
+	}
 }
 
 
 
-void EnemyZakoBox::UpdateStraightBullet(const float delta_time) {
+void EnemyZakoBox::EraseInvalidBullet() {
 
 	auto it = _straight_bullets_zakoBox.begin();
 
 	while (it != _straight_bullets_zakoBox.end()) {
-
-		(*it)->Update(delta_time);
 
 		if (!(*it)->_isActive) {
 			it = _straight_bullets_zakoBox.erase(it);
@@ -200,16 +160,13 @@ void EnemyZakoBox::UpdateStraightBullet(const float delta_time) {
 		}
 		it++;
 	}
-
-	if (_straight_bullets_zakoBox.empty()) InitStraightBullet();
 }
-
 
 
 
 void EnemyZakoBox::InitHomingBullet() {
 
-	for (int i = 0; i < INIT_BULLET_NUM; i++) {
+	for (int i = 0; i < 5; i++) {
 
 		if (homing_bullet_count % 20 != 0) continue;
 
@@ -274,10 +231,26 @@ void EnemyZakoBox::Render(Shared<dxe::Camera> camera) {
 	ShowHpGage_EnemyZako();
 
 	for (auto blt : _straight_bullets_zakoBox) {
+
+		// シャドウマップへの描画開始
+		//_shadow->reserveBegin();
+		//blt->_mesh->reserveShadow();
+		//_shadow->reserveEnd();
+
+		//// シャドウマップとブルーム適用開始
+		//_shadow->renderBegin();
+		//_screen_effect->renderBegin();
 		blt->Render(camera);
+		// シャドウマップとブルーム適用終了
+		//_screen_effect->renderEnd();
+		//_shadow->renderEnd();
 	}
 
 	for (auto blt : _homing_bullets_zakoBox) {
+		blt->_mesh->reserveShadow();
+
 		blt->Render(camera);
 	}
+
+
 }

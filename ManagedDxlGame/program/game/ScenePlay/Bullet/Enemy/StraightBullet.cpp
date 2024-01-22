@@ -2,25 +2,40 @@
 #include "EnemyBullet.h"
 
 
+StraightBullet::StraightBullet() {
 
-StraightBullet::StraightBullet(Shared<StraightBullet> straightBullet) {
+	_mesh = dxe::Mesh::CreateSphereMV(10);
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/purple.jpg"));
 
-	_mesh = dxe::Mesh::CreateSphere(10);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/yellow.jpg"));
 }
-
 
 
 StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3& move_dir, const Shared<Player>& player, const float& speed) {
 
-	_mesh = dxe::Mesh::CreateSphere(10);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/yellow.jpg"));
+
+	_mesh = dxe::Mesh::CreateSphereMV(10);
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/colorTexture/purple.jpg"));
 	_mesh->pos_ = spawn_pos;
 	_move_dir = move_dir;
 
 	_speed = speed;
 	_player_ref = player;
 }
+
+
+void StraightBullet::CheckLifeTimeDistance(const Shared<StraightBullet>& straightBullet)
+{
+	static tnl::Vector3 start = straightBullet->_mesh->pos_;
+
+	float dx = straightBullet->_mesh->pos_.x - start.x;
+	float dy = straightBullet->_mesh->pos_.y - start.y;
+	float dz = straightBullet->_mesh->pos_.z - start.z;
+
+	float current_distance = sqrt(dx * dx + dy * dy + dz * dz);
+
+	if (abs(current_distance) > 500) straightBullet->_isActive = false;
+}
+
 
 
 
@@ -31,17 +46,4 @@ StraightBullet::StraightBullet(const tnl::Vector3& spawn_pos, const tnl::Vector3
 
 void StraightBullet::Update(float delta_time) {
 
-	// ’e‚ÌŽõ–½‚Í‹——£‚ÅŠÇ—
-	static tnl::Vector3 start = _mesh->pos_;
-
-	_mesh->pos_ += _move_dir * delta_time * _speed;
-
-	float dx = _mesh->pos_.x - start.x;
-	float dy = _mesh->pos_.y - start.y;
-	float dz = _mesh->pos_.z - start.z;
-
-	float current_distance = sqrt(dx * dx + dy * dy + dz * dz);
-
-	// ”ò‹——£‚ª600‚ð’´‚¦‚½‚çÁ‹Ž
-	if (abs(current_distance) > 600) _isActive = false;	
 }
