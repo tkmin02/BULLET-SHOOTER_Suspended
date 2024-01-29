@@ -4,11 +4,11 @@
 class BulletHellFactory;
 class ScenePlay;
 
-
 struct SpawnedBossBulletInfo {
 	tnl::Vector3 originPos;
 	tnl::Vector3 moveDirection;
 };
+
 
 
 // 弾の生成、弾幕のパターン、弾の更新と削除などを行う (EnemyBoss限定)
@@ -21,11 +21,16 @@ public:
 	enum class TYPE {
 
 		None,
+		// パチュリー
 		Normal_Patchouli,
-		SilentSerena_Patchouli,
 		MetalFatigue_Patchouli,
-		Perfect_Freeze,
-		KeroChan_StandsFirm_AgainstTheStorm,
+		SilentSerena_Patchouli,
+		// チルノ
+		Normal_Cirno,
+		IcicleFall_Cirno,
+		Perfect_Freeze_Cirno,
+		// 諏訪子
+		KeroChan_StandsFirm_AgainstTheStorm_Suwako,
 	};
 
 public:
@@ -33,19 +38,19 @@ public:
 	BulletHell() {}
 	BulletHell(const Shared<dxe::Mesh>& bossMesh);
 
-	void RemoveBullet(Shared<EnemyBullet> bullet);
-	void Clear();
-
-	// 1ステージボス（パチュリー）-------------------------------
+	// ステージ1ボス（パチュリー）-------------------------------------
 	void ShotBulletHell_Normal_Patchouli(const float& delta_time);
-	void ShotBulletHell_SilentSerena_Patchouli(const float& delta_time);
 	void ShotBulletHell_MetalFatigue_Patchouli(const float& delta_time);
-	// -------------------------------------------------------------
-
-	// 2ステージボス（
-	void ShotBulletHell_PerfectFreeze(const float& delta_time);
-	// 3ステージボス
+	void ShotBulletHell_SilentSerena_Patchouli(const float& delta_time);
+	// ステージ2ボス（チルノ）---------------------------------------------
+	void ShotBulletHell_Normal_Cirno(const float& delta_time);
+	void ShotBulletHell_IcicleFall_Cirno(const float& delta_time);
+	void ShotBulletHell_PerfectFreeze_Cirno(const float& delta_time);
+	// ステージ3ボス（諏訪子）---------------------------------------------
 	void ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm(const float& delta_time);
+
+
+	// ---------------------------------------------
 
 	void CheckLifeTimeDistance(Shared<EnemyBullet>& it_bltHell);
 
@@ -58,9 +63,6 @@ private:
 	std::map<int, Shared<EnemyBullet>> _bltHellsBlt_map;
 
 public:
-
-
-
 
 	static int currentBulletNum;
 

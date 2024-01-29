@@ -14,7 +14,7 @@ void BulletHell::ShotBulletHell_Normal_Patchouli(const float& delta_time) {
 	for (auto& bullet : ScenePlay::_bullet_normal_patchouli) {
 		int id = bullet->_id;
 
-		ScenePlay::_BLTINFO_T_NORMAL_PATCHOULI[id].moveDirection = bullet->_moveDirection;
+		ScenePlay::_EVERYSINGLE_BLTINFO_T_NORMAL_PATCHOULI[id].moveDirection = bullet->_moveDirection;
 	}
 
 
@@ -24,8 +24,6 @@ void BulletHell::ShotBulletHell_Normal_Patchouli(const float& delta_time) {
 
 
 			it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
-
-
 
 			double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
 			double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
@@ -50,8 +48,20 @@ void BulletHell::ShotBulletHell_Normal_Patchouli(const float& delta_time) {
 
 			it_blt_hell_blt->_moveDirection.normalize();
 
-			it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
-			it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+			//it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
+			//it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+
+			float sin = std::sin(tnl::PI / 180.f);
+			float cos = std::sin(tnl::PI / 180.f);
+
+			tnl::Vector3 myPos = ScenePlay::_EVERYSINGLE_BLTINFO_T_NORMAL_PATCHOULI[it_blt_hell_blt->_id].originPos;
+			tnl::Vector3 axisVec(0.0f, 0.0f, 1.0f);
+
+			it_blt_hell_blt->_mesh->pos_ = myPos * (cos * cos - sin * sin)
+				+ axisVec.cross(myPos) * 2.0f * sin * cos
+				+ axisVec * axisVec.dot(myPos) * 2.0f * sin * sin;
+
+			myPos = it_blt_hell_blt->_mesh->pos_;
 		}
 
 		if (it_blt_hell_blt->color == EnemyBullet::COLOR::White && it_blt_hell_blt->_movementsType == "Cylinder.Round") {
@@ -90,81 +100,120 @@ void BulletHell::ShotBulletHell_Normal_Patchouli(const float& delta_time) {
 		// 全方位
 		if (it_blt_hell_blt->color == EnemyBullet::COLOR::EmeraldGreen && it_blt_hell_blt->_movementsType == "Sphere.Straight") {
 
+			std::vector<Shared<EnemyBullet>> group1, group2, group3, group4;
+			std::vector<Shared<EnemyBullet>> everyDir_bullets; // 全方位弾の全てのオブジェクトを格納しソートする
 
-			if (it_blt_hell_blt->_id < 24) {
+			for (int i = 0; i < ScenePlay::_bullet_normal_patchouli.size(); i++) {
 
-				it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
-
-				double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
-				double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
-				double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
-
-				float radius = sqrt(dx * dx + dy * dy + dz * dz);
-
-				it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
-				it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
-
-				it_blt_hell_blt->_moveDirection.normalize();
-
-				it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
-				it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+				if (ScenePlay::_bullet_normal_patchouli[i]->_movementsType == "Sphere.Round" || ScenePlay::_bullet_normal_patchouli[i]->_movementsType == "Cylinder.Round") {
+					continue;
+				}
+				else {
+					everyDir_bullets.push_back(ScenePlay::_bullet_normal_patchouli[i]);
+				}
 			}
-			else if (it_blt_hell_blt->_id > 24 && it_blt_hell_blt->_id < 48) {
 
-				it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
+			// 生成位置に基づいてリストをソートしたいが、現状できていない
 
-				double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
-				double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
-				double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
+			int bullets_per_group = _EVERYDIRECTION_BULLETCOUNT_T_NORMAL_PATCHOULI / 4;
+			int bullets_per_round = bullets_per_group / 3;
 
-				float radius = sqrt(dx * dx + dy * dy + dz * dz);
+			for (int i = 0; i < bullets_per_group; i++) {
 
-				it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
-				it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+				if (it_blt_hell_blt->_id < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI + bullets_per_group) {
+					group1.push_back(it_blt_hell_blt);
 
-				it_blt_hell_blt->_moveDirection.normalize();
+				}
+				if (it_blt_hell_blt->_id < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI + bullets_per_group * 2) {
+					group2.push_back(it_blt_hell_blt);
 
-				it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
-				it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+				}
+				if (it_blt_hell_blt->_id < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI + bullets_per_group * 3) {
+					group3.push_back(it_blt_hell_blt);
 
-			}
-			else if (it_blt_hell_blt->_id > 48 && it_blt_hell_blt->_id < 72) {
+				}
+				if (it_blt_hell_blt->_id < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI + bullets_per_group * 4) {
+					group4.push_back(it_blt_hell_blt);
 
-				it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
-
-				double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
-				double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
-				double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
-
-				float radius = sqrt(dx * dx + dy * dy + dz * dz);
-
-				it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
-				it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
-
-				it_blt_hell_blt->_moveDirection.normalize();
-
-				it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
-				it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+				}
 
 			}
-			else {
-				it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
 
-				double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
-				double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
-				double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
 
-				float radius = sqrt(dx * dx + dy * dy + dz * dz);
+			//if (it_blt_hell_blt->_id % 16 == 0) {
 
-				it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
-				it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+			//	it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
 
-				it_blt_hell_blt->_moveDirection.normalize();
+			//	double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
+			//	double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
+			//	double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
 
-				it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
-				it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+			//	float radius = sqrt(dx * dx + dy * dy + dz * dz);
 
-			}
+			//	it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
+			//	it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+
+			//	it_blt_hell_blt->_moveDirection.normalize();
+
+			//	it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
+			//	it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+			//}
+			//else if (it_blt_hell_blt->_id > 24 && it_blt_hell_blt->_id < 48) {
+
+			//	it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
+
+			//	double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
+			//	double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
+			//	double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
+
+			//	float radius = sqrt(dx * dx + dy * dy + dz * dz);
+
+			//	it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
+			//	it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+
+			//	it_blt_hell_blt->_moveDirection.normalize();
+
+			//	it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
+			//	it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+
+			//}
+			//else if (it_blt_hell_blt->_id > 48 && it_blt_hell_blt->_id < 72) {
+
+			//	it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
+
+			//	double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
+			//	double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
+			//	double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
+
+			//	float radius = sqrt(dx * dx + dy * dy + dz * dz);
+
+			//	it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
+			//	it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+
+			//	it_blt_hell_blt->_moveDirection.normalize();
+
+			//	it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
+			//	it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+
+			//}
+			//else {
+			//	it_blt_hell_blt->_angle = (2.0f * tnl::PI / 8) * it_blt_hell_blt->_id;
+
+			//	double dx = _bossMesh_ref->pos_.x - it_blt_hell_blt->_mesh->pos_.x;
+			//	double dy = _bossMesh_ref->pos_.y - it_blt_hell_blt->_mesh->pos_.y;
+			//	double dz = _bossMesh_ref->pos_.z - it_blt_hell_blt->_mesh->pos_.z;
+
+			//	float radius = sqrt(dx * dx + dy * dy + dz * dz);
+
+			//	it_blt_hell_blt->_moveDirection.x = _bossMesh_ref->pos_.x + cos(it_blt_hell_blt->_angle) * radius;
+			//	it_blt_hell_blt->_moveDirection.z = _bossMesh_ref->pos_.z + sin(it_blt_hell_blt->_angle) * radius;
+
+			//	it_blt_hell_blt->_moveDirection.normalize();
+
+			//	it_blt_hell_blt->_mesh->pos_.x += it_blt_hell_blt->_moveDirection.x * delta_time * 100;
+			//	it_blt_hell_blt->_mesh->pos_.z += it_blt_hell_blt->_moveDirection.z * delta_time * 100;
+
+			//}
 		}
 
 
@@ -180,95 +229,73 @@ void BulletHell::ShotBulletHell_MetalFatigue_Patchouli(const float& delta_time) 
 	for (auto& bullet : ScenePlay::_bullet_metalFatigue_patchouli) {
 		int id = bullet->_id;
 
-		ScenePlay::_BLTINFO_T_METALFATIGUE_PATCHOULI[id].moveDirection = bullet->_moveDirection;
+		ScenePlay::_EVERYSINGLE_BLTINFO_T_METALFATIGUE_PATCHOULI[id].moveDirection = bullet->_moveDirection;
 	}
-
 
 
 	for (auto it_blt_hell_blt : ScenePlay::_bullet_metalFatigue_patchouli) {
 
+		// 遅延処理で使用するタイマー
+		std::map<Shared<EnemyBullet>, float> bullet_timers;
 
 		if (it_blt_hell_blt->color == EnemyBullet::COLOR::Yellow) {
+
+			// 各弾自身をキーとしてそれぞれが固有の時間を計測・管理する
+			bullet_timers[it_blt_hell_blt] += delta_time;
+
+			float delay_origin = 1.0f;  // Sphere.Round.Origin
+			float delay_wave1 = 2.0f;   // Sphere.Round.Wave1
+			float delay_wave2 = 3.0f;   // Sphere.Round.Wave2
+
 
 			tnl::Vector3 bullet_move_orbit_origin;
 			float theta = (2.f * tnl::PI / 8) * it_blt_hell_blt->_id;
 
+			// 初弾
 			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Origin") {
 
+				float new_x = _bossMesh_ref->pos_.x + sin(theta) * delta_time;
+				float new_y = _bossMesh_ref->pos_.y + cos(theta) * delta_time;
 
-
-				bullet_move_orbit_origin.y = _bossMesh_ref->pos_.y + cos(theta) * delta_time;
-				bullet_move_orbit_origin.z = _bossMesh_ref->pos_.z + sin(theta) * delta_time;
-
-				if (bullet_move_orbit_origin.y > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_origin.y = it_blt_hell_blt->_radius;
+				if (abs(new_x) <= it_blt_hell_blt->_radius) {
+					bullet_move_orbit_origin.x += new_x;
 				}
-				if (bullet_move_orbit_origin.z > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_origin.z = it_blt_hell_blt->_radius;
+				if (abs(new_y) <= it_blt_hell_blt->_radius) {
+					bullet_move_orbit_origin.y += new_y;
 				}
 
-				it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_origin * delta_time * 200;
+				float current_distance = (_bossMesh_ref->pos_ - it_blt_hell_blt->_mesh->pos_).length();
+
+				// 指定した半径に座標が到達したらリセット
+				if (current_distance > it_blt_hell_blt->_radius)
+					it_blt_hell_blt->_isActive = false;
+				else
+					it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_origin * delta_time * 4000.0f;
 			}
 
-			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Wave1") {
-
-				tnl::Vector3 bullet_move_orbit_wave1;
-
-				bullet_move_orbit_wave1.y = cos(theta) * delta_time;
-				bullet_move_orbit_wave1.z = sin(theta) * delta_time;
-
-				if (bullet_move_orbit_wave1.y > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave1.y = it_blt_hell_blt->_radius;
-				}
-				if (bullet_move_orbit_wave1.z > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave1.z = it_blt_hell_blt->_radius;
-				}
-
-				it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_wave1 * delta_time * 200;
-
+			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Origin" && bullet_timers[it_blt_hell_blt] >= delay_origin) {
+				bullet_timers[it_blt_hell_blt] = 0.0f;
+			}
+			else if (it_blt_hell_blt->_movementsType == "Sphere.Round.Wave1" && bullet_timers[it_blt_hell_blt] >= delay_wave1) {
+				bullet_timers[it_blt_hell_blt] = 0.0f;  // タイマーのリセット
+			}
+			else if (it_blt_hell_blt->_movementsType == "Sphere.Round.Wave2" && bullet_timers[it_blt_hell_blt] >= delay_wave2) {
+				bullet_timers[it_blt_hell_blt] = 0.0f;  // タイマーのリセット
 			}
 
-			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Wave2") {
+			tnl::Vector3 bullet_move_orbit_wave;
 
-				tnl::Vector3 bullet_move_orbit_wave2;
+			bullet_move_orbit_wave.y = cos(theta) * delta_time;
+			bullet_move_orbit_wave.z = sin(theta) * delta_time;
 
-				bullet_move_orbit_wave2.y = cos(theta) * delta_time;
-				bullet_move_orbit_wave2.z = sin(theta) * delta_time;
 
-				if (bullet_move_orbit_wave2.y > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave2.y = it_blt_hell_blt->_radius;
-				}
-				if (bullet_move_orbit_wave2.z > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave2.z = it_blt_hell_blt->_radius;
-				}
+			it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_wave * delta_time * 4000.0f;
 
-				it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_wave2 * delta_time * 200;
-
-			}
-
-			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Wave3") {
-
-				tnl::Vector3 bullet_move_orbit_wave3;
-
-				bullet_move_orbit_wave3.y = cos(theta) * delta_time;
-				bullet_move_orbit_wave3.z = sin(theta) * delta_time;
-
-				if (bullet_move_orbit_wave3.y > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave3.y = it_blt_hell_blt->_radius;
-				}	
-				if (bullet_move_orbit_wave3.z > it_blt_hell_blt->_radius) {
-					bullet_move_orbit_wave3.z = it_blt_hell_blt->_radius;
-				}
-
-				it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_wave3 * delta_time * 200;
-
-			}
 		}
 
 		CheckLifeTimeDistance(it_blt_hell_blt);
 
 	}
-
 }
 
 
@@ -278,24 +305,17 @@ void BulletHell::ShotBulletHell_SilentSerena_Patchouli(const float& delta_time) 
 	for (auto& bullet : ScenePlay::_bullet_silentSerena_patchouli) {
 		int id = bullet->_id;
 
-		ScenePlay::_BLTINFO_T_SILENTSERENA_PATCHOULI[id].moveDirection = bullet->_moveDirection;
+		ScenePlay::_EVERYSINGLE_BLTINFO_T_SILENTSERENA_PATCHOULI[id].moveDirection = bullet->_moveDirection;
 	}
 
 
-	int i = 0;
 
 	for (auto it_blt_hell_blt : ScenePlay::_bullet_silentSerena_patchouli) {
 
-		//_bltHellsBlt_map[i] = it_blt_hell_blt;
 
 		if (it_blt_hell_blt->color == EnemyBullet::COLOR::EmeraldGreen) {
 
-
-			//if (_bltHellFactory->ReuseBulletHellsBullet_SilentSerena(_bltHellsBlt_map, it_blt_hell_blt->_id) != nullptr) {
-			//	_bltHellsBlt_map[i] = _bltHellFactory->ReuseBulletHellsBullet_SilentSerena(_bltHellsBlt_map, it_blt_hell_blt->_id);
-			//}
-
-			float theta = i * (2.f * tnl::PI / ScenePlay::_bullet_silentSerena_patchouli.size());
+			float theta = (2.f * tnl::PI / ScenePlay::_bullet_silentSerena_patchouli.size()) * it_blt_hell_blt->_id;
 			float pi = tnl::PI / 1.001f;
 
 			tnl::Vector3 bullet_spawn_pos;
@@ -308,13 +328,10 @@ void BulletHell::ShotBulletHell_SilentSerena_Patchouli(const float& delta_time) 
 
 			it_blt_hell_blt->_mesh->pos_ += move_dir * delta_time * 200;
 		}
-		else if (it_blt_hell_blt->color == EnemyBullet::COLOR::Blue) {
+		if (it_blt_hell_blt->color == EnemyBullet::COLOR::Blue) {
 
-			//if (_bltHellFactory->ReuseBulletHellsBullet_SilentSerena(_bltHellsBlt_map, it_blt_hell_blt->_id) != nullptr) {
-			//	_bltHellsBlt_map[i] = _bltHellFactory->ReuseBulletHellsBullet_SilentSerena(_bltHellsBlt_map, it_blt_hell_blt->_id);
-			//}
 
-			float theta = i * (tnl::PI / ScenePlay::_bullet_silentSerena_patchouli.size());
+			float theta = (2.f * tnl::PI / ScenePlay::_bullet_silentSerena_patchouli.size()) * it_blt_hell_blt->_id;
 			float pi = tnl::PI;
 
 			tnl::Vector3 bullet_spawn_pos;
@@ -329,10 +346,77 @@ void BulletHell::ShotBulletHell_SilentSerena_Patchouli(const float& delta_time) 
 		}
 
 		CheckLifeTimeDistance(it_blt_hell_blt);
-		i++;
 	}
 }
 
+
+
+void BulletHell::ShotBulletHell_Normal_Cirno(const float& delta_time) {
+
+	for (auto& bullet : ScenePlay::_bullet_normal_cirno) {
+		int id = bullet->_id;
+
+		ScenePlay::_EVERYSINGLE_BLTINFO_T_NORMAL_CIRNO[id].moveDirection = bullet->_moveDirection;
+	}
+
+
+	for (auto it_blt_hell_blt : ScenePlay::_bullet_normal_cirno) {
+
+		// 遅延処理で使用するタイマー
+		std::map<Shared<EnemyBullet>, float> bullet_timers;
+
+		if (it_blt_hell_blt->color == EnemyBullet::COLOR::Yellow) {
+
+			// 各弾自身をキーとしてそれぞれが固有の時間を計測・管理する
+			bullet_timers[it_blt_hell_blt] += delta_time;
+
+			float delay_origin = 1.0f;  // Sphere.Round.Origin
+			float delay_wave1 = 2.0f;   // Sphere.Round.Wave1
+			float delay_wave2 = 3.0f;   // Sphere.Round.Wave2
+
+
+			tnl::Vector3 bullet_move_orbit_origin;
+			float theta = (2.f * tnl::PI / 8) * it_blt_hell_blt->_id;
+
+			// 初弾
+			if (it_blt_hell_blt->_movementsType == "Sphere.Round.Origin") {
+
+				float new_x = _bossMesh_ref->pos_.x + sin(theta) * delta_time;
+				float new_y = _bossMesh_ref->pos_.y + cos(theta) * delta_time;
+
+				if (abs(new_x) <= it_blt_hell_blt->_radius) {
+					bullet_move_orbit_origin.x += new_x;
+				}
+				if (abs(new_y) <= it_blt_hell_blt->_radius) {
+					bullet_move_orbit_origin.y += new_y;
+				}
+
+				float current_distance = (_bossMesh_ref->pos_ - it_blt_hell_blt->_mesh->pos_).length();
+
+				// 指定した半径に座標が到達したらリセット
+				if (current_distance > it_blt_hell_blt->_radius)
+					it_blt_hell_blt->_isActive = false;
+				else
+					it_blt_hell_blt->_mesh->pos_ += bullet_move_orbit_origin * delta_time * 4000.0f;
+			}
+		}
+		if (it_blt_hell_blt->color == EnemyBullet::COLOR::EmeraldGreen) {
+
+		}
+	}
+}
+
+void BulletHell::ShotBulletHell_IcicleFall_Cirno(const float& delta_time) {
+
+}
+void BulletHell::ShotBulletHell_PerfectFreeze_Cirno(const float& delta_time) {
+
+}
+
+
+void BulletHell::ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm(const float& delta_time) {
+
+}
 
 
 void BulletHell::CheckLifeTimeDistance(Shared<EnemyBullet>& it_bltHell)
@@ -345,31 +429,5 @@ void BulletHell::CheckLifeTimeDistance(Shared<EnemyBullet>& it_bltHell)
 
 	float current_distance = sqrt(dx * dx + dy * dy + dz * dz);
 
-	if (abs(current_distance) > 500) it_bltHell->_isActive = false;
-}
-
-
-
-void BulletHell::ShotBulletHell_PerfectFreeze(const float& delta_time) {
-
-	//_bulletHell_bullets = _bltHellFactory->CreateBulletHell(BulletHell::TYPE::Perfect_Freeze);
-}
-
-
-void BulletHell::ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm(const float& delta_time) {
-
-	//_bulletHell_bullets = _bltHellFactory->CreateBulletHell(BulletHell::TYPE::KeroChan_StandsFirm_AgainstTheStorm);
-}
-
-
-
-void BulletHell::RemoveBullet(Shared<EnemyBullet> bullet) {
-
-
-}
-
-
-
-void BulletHell::Clear() {
-	//_bulletHell_bullets.clear();
+	if (abs(current_distance) > 1000) it_bltHell->_isActive = false;
 }
