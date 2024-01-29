@@ -6,6 +6,7 @@
 
 
 class HomingBullet;
+class BulletFactory;
 
 
 class EnemyZakoDome : public EnemyBase
@@ -14,43 +15,30 @@ public:
 
 	EnemyZakoDome(){}
 
-	explicit EnemyZakoDome(tnl::Vector3){}
-
-	EnemyZakoDome(const EnemyZakoDome& info) {}
-
-	EnemyZakoDome(std::vector<Shared<EnemyBase>>& list) {}
-
-	EnemyZakoDome(std::vector<Shared<EnemyZakoInfo>>& enemyList) {}
-
-	// 変換コンストラクタ
 	EnemyZakoDome(const EnemyZakoInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 	
+	void  InitBulletFactoryInstance() override;
 
 private:
 
 	// 弾系----------------------------------------------------------------
 
-	void UpdateStraightBullet(const float delta_time) override;
+	void ShotStraightBullet(const float& delta_time);
 
-	void InitStraightBullet() override;
+	void ReloadStraightBulletByTimer(float& reload_time_counter, const float& delta_time);
 
-	void UpdateHomingBullet(const float delta_time) override;
+	void EraseInvalidStraightBullet() override;
 
-	void InitHomingBullet() override;
+	void ShotHomingBullet(const float& delta_time);
+
 
 	//----------------------------------------------------------------------
-
-	tnl::Vector3 CalcVecFromAngle(float angle) override;
-
-	float GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<Player> player) override;
 
 	bool Update(float delta_time) override;
 
 	void Render(Shared<dxe::Camera> camera) override;
 
 	void SetMeshInfo() override;
-
-	void Clone() override { _mesh->createClone(); }
 	
 	void DoRoutineMoves(float delta_time) override;
 
@@ -65,15 +53,18 @@ public:
 
 private:
 
+	Shared<BulletFactory> _bulletFactory = nullptr;
+
+	std::list<Shared<StraightBullet>> _straightBullet;
+	std::deque<Shared<StraightBullet>>_straightBullet_queue;
+
+private:
+
 	tnl::Vector3 prev_pos;
 
 	int straight_bullet_count;
 	int homing_bullet_count;
 
-
-	const int INIT_BULLET_NUM = 6;
-
 	const float _IDLE_DISTANCE = 500.0f;
 	const float _ATTACK_DISTANCE = 450.0f;
-	const float BULLET_SPEED = 200.0f;
 };

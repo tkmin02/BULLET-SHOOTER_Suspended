@@ -3,7 +3,7 @@
 #include "../../../Bullet/Enemy/StraightBullet.h"
 #include "../../../Bullet/Enemy/HomingBullet.h"
 #include "../../../EnemyMove/EnemyMover.h"
-
+#include "../../../Bullet/Enemy/BulletFactory.h"
 
 std::list<Shared<StraightBullet>> EnemyZakoCylinder::_straight_bullets_zakoCylinder;
 std::list<Shared<HomingBullet>> EnemyZakoCylinder::_homing_bullets_zakoCylinder;
@@ -12,6 +12,8 @@ std::list<Shared<HomingBullet>> EnemyZakoCylinder::_homing_bullets_zakoCylinder;
 EnemyZakoCylinder::EnemyZakoCylinder(const EnemyZakoInfo& data, const Shared<Player>& player, const Shared<dxe::Camera>& camera)
 	: EnemyBase(data, player, camera), straight_bullet_count(0), homing_bullet_count(0)
 {
+	_explode_particle = std::make_shared<dxe::Particle>("particle/preset/explosion.bin");
+
 	collide_size = { 30,30,30 };
 }
 
@@ -27,30 +29,16 @@ void EnemyZakoCylinder::SetMeshInfo() {
 
 
 
-tnl::Vector3 EnemyZakoCylinder::CalcVecFromAngle(float angle) {
+void EnemyZakoCylinder::InitBulletFactoryInstance() {
+	_bulletFactory = std::make_shared<BulletFactory>(_mesh);
 
-	tnl::Vector3 temp;
+	std::list<Shared<StraightBullet>> bullets = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox, _maxBulletSpawnCount);
+	for (const auto& bullet : bullets) {
+		_straightBullet_queue.push_back(bullet);
+	}
 
-	temp.x = sin(angle);
-	temp.y = -cos(angle);
-
-	return temp;
 }
 
-
-
-float EnemyZakoCylinder::GetAngleBtw_EnemyAndPlayer(Shared<dxe::Mesh> enemy, Shared<Player> player) {
-
-	//　外積・内積は２つのベクトルの相対角度とは関係がないので使わない
-
-	float dx = player->_mesh->pos_.x - enemy->pos_.x;
-	float dy = player->_mesh->pos_.y - enemy->pos_.y;
-
-	// プレイヤーとエネミーの位置の相対角度を求める
-	float angle = atan2(dy, dx);
-
-	return angle;
-}
 
 
 
@@ -99,83 +87,84 @@ void EnemyZakoCylinder::ChasePlayer(const float delta_time) {
 void EnemyZakoCylinder::AttackPlayer(const float& delta_time) {
 
 	int randValue = rand() % 2;
-	static float elapsed_time = 0.0f;
 
 	switch (randValue)
 	{
 	case 0:
 	{
-		straight_bullet_count++;
+		ShotStraightBullet(delta_time);
 
-		if (!_canShotStraightBullet) _canShotStraightBullet = true;
-
-
-		if (_canShotStraightBullet) {
-
-			for (int i = 0; i < INIT_BULLET_NUM; i++) {
-
-				InitStraightBullet();
-			}
-			UpdateStraightBullet(delta_time);
-		}
 		break;
 	}
 	case 1:
 	{
-		homing_bullet_count++;
 
-		if (_canShotHomingBullet) {
-
-			InitHomingBullet();
-		}
-		UpdateHomingBullet(delta_time);
-
-		break;
 	}
 	}
-}
-
-
-
-void EnemyZakoCylinder::InitStraightBullet() {
-
-
-	// 発射位置を自分の正面に設定
-	tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
-
-	tnl::Vector3 spawn_pos = _mesh->pos_;
-	spawn_pos.x += _mesh->rot_.x;
-	spawn_pos.y += _mesh->rot_.y;
-	spawn_pos.z += _mesh->rot_.z;
-	spawn_pos.z -= 30;
-
-	spawn_pos += move_dir * 20;
-
-
-
-
-	auto it = std::make_shared<StraightBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED);
-
-	if (it->_isActive || straight_bullet_count % 20 != 0) return;
-
-	it->_isActive = true;
-
-
-	_straight_bullets_zakoCylinder.push_back(it);
-
-	straight_bullet_count = 0;
 
 }
 
 
+void EnemyZakoCylinder::ShotStraightBullet(const float& delta_time) {
+	static float reload_time_counter = 0.0f;  // リロード時間を追跡する変数
 
-void EnemyZakoCylinder::UpdateStraightBullet(const float delta_time) {
+	straight_bullet_count++;
+
+
+
+	// 撃った弾の間隔を空けるための処理
+	if (straight_bullet_count % _bulletFireInterval == 0 && !_straightBullet_queue.empty()) {
+
+		_straight_bullets_zakoCylinder.push_back(_straightBullet_queue.front());
+		_straightBullet_queue.pop_front();
+		straight_bullet_count = 0;
+	}
+
+
 
 	auto it = _straight_bullets_zakoCylinder.begin();
 
 	while (it != _straight_bullets_zakoCylinder.end()) {
 
-		(*it)->Update(delta_time);
+		if ((*it)->_isActive) {
+			tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
+
+			(*it)->_mesh->pos_ += move_dir * delta_time * _bulletMoveSpeed;
+
+			(*it)->CheckLifeTimeDistance(*it);
+
+		}
+
+		else if (!(*it)->_isActive) {
+			it = _straight_bullets_zakoCylinder.erase(it);
+			continue;
+		}
+		it++;
+
+	}
+
+	ReloadStraightBulletByTimer(reload_time_counter, delta_time);
+}
+
+void EnemyZakoCylinder::ReloadStraightBulletByTimer(float& reload_time_counter, const float& delta_time) {
+	if (_straightBullet_queue.empty()) {
+
+		reload_time_counter += delta_time;
+
+		if (reload_time_counter >= _reloadTimeInterval) {
+			std::list<Shared<StraightBullet>> bullets = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox, _maxBulletSpawnCount);
+			for (const auto& bullet : bullets) {
+				_straightBullet_queue.push_back(bullet);
+			}
+			reload_time_counter = 0.0f;
+		}
+	}
+}
+
+void EnemyZakoCylinder::EraseInvalidStraightBullet() {
+	auto it = _straight_bullets_zakoCylinder.begin();
+
+	while (it != _straight_bullets_zakoCylinder.end()) {
 
 		if (!(*it)->_isActive) {
 			it = _straight_bullets_zakoCylinder.erase(it);
@@ -184,57 +173,13 @@ void EnemyZakoCylinder::UpdateStraightBullet(const float delta_time) {
 		it++;
 	}
 
-	if (_straight_bullets_zakoCylinder.empty()) InitStraightBullet();
+}
+
+void EnemyZakoCylinder::ShotHomingBullet(const float& delta_time) {
+
 }
 
 
-
-
-void EnemyZakoCylinder::InitHomingBullet() {
-
-
-
-	for (int i = 0; i < INIT_BULLET_NUM; i++) {
-
-		if (homing_bullet_count % 20 != 0) continue;
-
-		// 発射位置を自分の正面に設定
-		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
-
-		tnl::Vector3 spawn_pos = _mesh->pos_;
-		spawn_pos.x += _mesh->rot_.x;
-		spawn_pos.y += _mesh->rot_.y;
-		spawn_pos.z += _mesh->rot_.z;
-		spawn_pos.z -= 30;
-
-		spawn_pos += move_dir * 20;
-
-		_homing_bullets_zakoCylinder.emplace_back(std::make_shared<HomingBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
-
-		homing_bullet_count = 0;
-		break;
-	}
-}
-
-
-
-void EnemyZakoCylinder::UpdateHomingBullet(const float delta_time) {
-
-	auto it = _homing_bullets_zakoCylinder.begin();
-
-	while (it != _homing_bullets_zakoCylinder.end()) {
-
-		(*it)->Update(delta_time);
-
-		if (!(*it)->_isActive) {
-			it = _homing_bullets_zakoCylinder.erase(it);
-			continue;
-		}
-		it++;
-	}
-
-	if (_homing_bullets_zakoCylinder.empty()) InitHomingBullet();
-}
 
 
 
@@ -261,7 +206,7 @@ void EnemyZakoCylinder::Render(Shared<dxe::Camera> camera) {
 		blt->Render(camera);
 	}
 
-	for (auto blt : _homing_bullets_zakoCylinder) {
-		blt->Render(camera);
-	}
+	//for (auto blt : _homing_bullets_zakoCylinder) {
+	//	blt->Render(camera);
+	//}
 }

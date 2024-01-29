@@ -14,15 +14,7 @@ public:
 
 	EnemyZakoBox(){}
 
-	explicit EnemyZakoBox(tnl::Vector3){}
 
-	EnemyZakoBox(const EnemyZakoInfo& info) {}
-
-	EnemyZakoBox(std::vector<Shared<EnemyBase>>& list) {}
-
-	EnemyZakoBox(std::vector<Shared<EnemyZakoInfo>>& enemyList) {}
-
-	// 変換コンストラクタ
 	EnemyZakoBox(const EnemyZakoInfo& info, const Shared<Player>& player, const Shared<dxe::Camera>& camera);
 	
 	void  InitBulletFactoryInstance() override;
@@ -33,11 +25,11 @@ private:
 
 	void ShotStraightBullet(const float& delta_time);
 
-	void UpdateHomingBullet(const float delta_time) override;
+	void ReloadStraightBulletByTimer(float& reload_time_counter, const float& delta_time);
 
-	void InitHomingBullet() override;
+	void EraseInvalidStraightBullet() override;
 
-	void EraseInvalidBullet() override;
+	void ShotHomingBullet(const float& delta_time);
 
 	//----------------------------------------------------------------------
 
@@ -46,8 +38,6 @@ private:
 	void Render(Shared<dxe::Camera> camera) override;
 
 	void SetMeshInfo() override;
-
-	void Clone() override { _mesh->createClone(); }
 	
 	void DoRoutineMoves(float delta_time) override;
 
@@ -66,6 +56,7 @@ private:
 	Shared<BulletFactory> _bulletFactory = nullptr;
 
 	std::list<Shared<StraightBullet>> _straightBullet;
+	std::deque<Shared<StraightBullet>>_straightBullet_queue;
 
 private:
 
@@ -77,5 +68,4 @@ private:
 
 	const float _IDLE_DISTANCE = 500.0f;
 	const float _ATTACK_DISTANCE = 450.0f;
-	const float BULLET_SPEED = 200.0f;
 };

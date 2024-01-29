@@ -35,6 +35,7 @@ void EnemyZakoBox::SetMeshInfo() {
 
 	_mesh->pos_ = GetRandomPosition_Mt19337();
 	_mesh->scl_ = { 1.0f, 1.0f, 1.0f };
+
 }
 
 
@@ -42,6 +43,11 @@ void EnemyZakoBox::SetMeshInfo() {
 void  EnemyZakoBox::InitBulletFactoryInstance() {
 
 	_bulletFactory = std::make_shared<BulletFactory>(_mesh);
+
+	std::list<Shared<StraightBullet>> bullets = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox, _maxBulletSpawnCount);
+	for (const auto& bullet : bullets) {
+		_straightBullet_queue.push_back(bullet);
+	}
 }
 
 
@@ -81,7 +87,7 @@ void EnemyZakoBox::ChasePlayer(const float delta_time) {
 
 	direction.Normalize(direction);
 
-	_mesh->pos_ += (direction * delta_time * _charaMoveSpeed);
+	_mesh->pos_ += direction * delta_time * _charaMoveSpeed;
 }
 
 
@@ -96,26 +102,12 @@ void EnemyZakoBox::AttackPlayer(const float& delta_time) {
 	case 0:
 	{
 		ShotStraightBullet(delta_time);
-		EraseInvalidBullet();
 
 		break;
 	}
 	case 1:
 	{
-		//	homing_bullet_count++;
 
-		//	if (!_canShotHomingBullet) _canShotHomingBullet = true;
-
-		//	if (_canShotHomingBullet) {
-
-		//		for (int i = 0; i < INIT_BULLET_NUM; i++) {
-
-		//			InitHomingBullet();
-		//		}
-		//		UpdateHomingBullet(delta_time);
-		//	}
-		//	break;
-		//}
 	}
 	}
 
@@ -123,32 +115,71 @@ void EnemyZakoBox::AttackPlayer(const float& delta_time) {
 
 
 
-
 void EnemyZakoBox::ShotStraightBullet(const float& delta_time) {
+
+	static float reload_time_counter = 0.0f;  // リロード時間を追跡する変数
 
 	straight_bullet_count++;
 
+	
 
-	if (straight_bullet_count % 50 == 0) {
+	// 撃った弾の間隔を空けるための処理
+	if (straight_bullet_count % _bulletFireInterval == 0 && !_straightBullet_queue.empty()) {
 
-		_straight_bullets_zakoBox = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox);
+		_straight_bullets_zakoBox.push_back(_straightBullet_queue.front());
+		_straightBullet_queue.pop_front();
 		straight_bullet_count = 0;
 	}
 
-	for (auto it_straight_bullet : _straight_bullets_zakoBox) {
 
-		if (it_straight_bullet->_isActive) {
+
+	auto it = _straight_bullets_zakoBox.begin();
+
+	while (it != _straight_bullets_zakoBox.end()) {
+
+		if ((*it)->_isActive) {
 			tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
-			it_straight_bullet->_mesh->pos_ += move_dir * delta_time * 500;
 
-			it_straight_bullet->CheckLifeTimeDistance(it_straight_bullet);
+			(*it)->_mesh->pos_ += move_dir * delta_time * _bulletMoveSpeed;
+
+			(*it)->CheckLifeTimeDistance(*it);
+
+		}
+
+		else if (!(*it)->_isActive) {
+			it = _straight_bullets_zakoBox.erase(it);
+			continue;
+		}
+		it++;
+
+	}
+
+	ReloadStraightBulletByTimer(reload_time_counter, delta_time);
+
+}
+
+
+
+
+void EnemyZakoBox::ReloadStraightBulletByTimer(float& reload_time_counter, const float& delta_time)
+{
+	if (_straightBullet_queue.empty()) {
+
+		reload_time_counter += delta_time;
+
+		if (reload_time_counter >= _reloadTimeInterval) {
+			std::list<Shared<StraightBullet>> bullets = _bulletFactory->CreateStraightBullet(StraightBullet::USER::ZakoBox, _maxBulletSpawnCount);
+			for (const auto& bullet : bullets) {
+				_straightBullet_queue.push_back(bullet);
+			}
+			reload_time_counter = 0.0f;
 		}
 	}
 }
 
 
 
-void EnemyZakoBox::EraseInvalidBullet() {
+void EnemyZakoBox::EraseInvalidStraightBullet() {
 
 	auto it = _straight_bullets_zakoBox.begin();
 
@@ -164,50 +195,39 @@ void EnemyZakoBox::EraseInvalidBullet() {
 
 
 
-void EnemyZakoBox::InitHomingBullet() {
+void EnemyZakoBox::ShotHomingBullet(const float& delta_time) {
 
-	for (int i = 0; i < 5; i++) {
+	static float reload_time_counter = 0.0f;  // リロード時間を追跡する変数
 
-		if (homing_bullet_count % 20 != 0) continue;
+	homing_bullet_count++;
 
-		// 発射位置を自分の正面に設定
-		tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
 
-		tnl::Vector3 spawn_pos = _mesh->pos_;
-		spawn_pos.x += _mesh->rot_.x;
-		spawn_pos.y += _mesh->rot_.y;
-		spawn_pos.z += _mesh->rot_.z;
-		spawn_pos.z -= 30;
 
-		spawn_pos += move_dir * 20;
+	// 撃った弾の間隔を空けるための処理
+	if (homing_bullet_count % _bulletFireInterval == 0 && !_straightBullet_queue.empty()) {
 
-		_homing_bullets_zakoBox.emplace_back(std::make_shared<HomingBullet>(spawn_pos, move_dir, _player_ref, BULLET_SPEED));
-
+		_straight_bullets_zakoBox.push_back(_straightBullet_queue.front());
+		_straightBullet_queue.pop_front();
 		homing_bullet_count = 0;
-		break;
 	}
-}
 
 
+	ReloadStraightBulletByTimer(reload_time_counter, delta_time);
 
-void EnemyZakoBox::UpdateHomingBullet(const float delta_time) {
 
-	auto it = _homing_bullets_zakoBox.begin();
+	for (auto it_straight_bullet : _straight_bullets_zakoBox) {
 
-	while (it != _homing_bullets_zakoBox.end()) {
+		if (it_straight_bullet->_isActive) {
 
-		(*it)->Update(delta_time);
+			tnl::Vector3 move_dir = tnl::Vector3::TransformCoord({ 0,0,1 }, _mesh->rot_);
 
-		if (!(*it)->_isActive) {
-			it = _homing_bullets_zakoBox.erase(it);
-			continue;
+			it_straight_bullet->_mesh->pos_ += move_dir * delta_time * _bulletMoveSpeed;
+
+			it_straight_bullet->CheckLifeTimeDistance(it_straight_bullet);
 		}
-		it++;
 	}
 
-	if (_homing_bullets_zakoBox.empty()) InitHomingBullet();
 }
-
 
 
 
@@ -232,25 +252,9 @@ void EnemyZakoBox::Render(Shared<dxe::Camera> camera) {
 
 	for (auto blt : _straight_bullets_zakoBox) {
 
-		// シャドウマップへの描画開始
-		//_shadow->reserveBegin();
-		//blt->_mesh->reserveShadow();
-		//_shadow->reserveEnd();
-
-		//// シャドウマップとブルーム適用開始
-		//_shadow->renderBegin();
-		//_screen_effect->renderBegin();
-		blt->Render(camera);
-		// シャドウマップとブルーム適用終了
-		//_screen_effect->renderEnd();
-		//_shadow->renderEnd();
-	}
-
-	for (auto blt : _homing_bullets_zakoBox) {
-		blt->_mesh->reserveShadow();
 
 		blt->Render(camera);
 	}
-
+	
 
 }
