@@ -1,8 +1,5 @@
 #pragma once
-#include <vector>
 #include "../../../DxLibEngine.h"
-#include "../../Character/Enemy/EnemyZakoBase.h"
-#include "../../Character/Enemy/EnemyBossBase.h"
 
 class PlayerBullet;
 class EnemyZakoBase;
@@ -14,23 +11,19 @@ class Player
 public:
 
 	Player() {}
-
 	explicit Player(Shared<FreeLookCamera> camera_ref);
 
+	// プレイヤー関係
+	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
+	bool DecreaseHP(int damage);
 	const tnl::Vector3 GetPos() const { return _mesh->pos_; }
 	void SetPos(const tnl::Vector3 pos) { _mesh->pos_ = pos; }
 
-	// 管理するエネミーのリストの参照用
+	// 敵関係
 	void SetEnemyZakoListRef(const std::vector<Shared<EnemyZakoBase>>& enemy_list_ref);
 	void SetEnemyBossListRef(const std::vector<Shared<EnemyBossBase>>& enemyBoss_ref);
 	void EraseEnemyZakoListRef(Shared<EnemyZakoBase>& enemy_list_ref);
 	void EraseEnemyBossListRef(Shared<EnemyBossBase>& enemyBoss_ref);
-
-
-	// プレイヤーの実体はScenePlayクラスにある
-	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
-
-	void DecreaseHP(int damage);
 
 	void Update(float delta_time);
 	void Render(Shared<FreeLookCamera> playerCamera);
@@ -42,6 +35,7 @@ private:
 	void AdjustPlayerVelocity();
 	void ControlRotationByPadOrMouse();
 	void RenderPlayerHp();
+	void InvincibleTime(const float delta_time);
 
 	// 敵関係
 	const tnl::Vector3 GetTargetsScreenCoordinates(const float& x, const float& y, const float& z);
@@ -61,8 +55,6 @@ public:
 	Shared<dxe::Mesh> _mesh = nullptr;
 	std::list<Shared<PlayerBullet>> _straight_bullets_p;
 
-	tnl::Vector3 collide_size{};
-
 private:
 
 	Shared<Player> _player_ref = nullptr;
@@ -70,9 +62,16 @@ private:
 
 	Shared<EnemyZakoBase> _enemyZako_ref = nullptr;
 	Shared<EnemyBossBase> _enemyBoss_ref = nullptr;
+
 	std::vector<Shared<EnemyZakoBase>> _enemyZako_list_ref{};
 	std::vector<Shared<EnemyBossBase>> _enemyBoss_list_ref{};
 
+public:
+
+	tnl::Vector3 collide_size{};
+	static bool _isInvincible;
+
+private:
 
 	int   _hp{};
 	int   _MAX_HP{};
@@ -82,9 +81,9 @@ private:
 	float _forward_velocity = 1.0f;
 
 	bool _isDead{};
-	bool _isInvincible{};
-	float _invincibleTime = 1.5f;
-	float _invincibleRestTime{};
+
+	static float _invincible_timer;
+	const float _INVINCIBLE_TIME_LIMIT = 3.0f;
 
 	float _moveSpeed = 0.4f;
 

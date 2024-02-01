@@ -1,8 +1,10 @@
-#include "Player.h"
 #include "../../Bullet/Player/PlayerBullet.h"
 #include "../../Sky/SkyBox.h"
 #include "../../ScenePlay.h"
 #include "../../Camera/FreeLookCamera.h"
+#include "../../Character/Enemy/EnemyZakoBase.h"
+#include "../../Character/Enemy/EnemyBossBase.h"
+#include "Player.h"
 
 
 // 半透明のオブジェクトの描画をする時の注意
@@ -11,6 +13,8 @@
 //　そうでないと、オブジェクトが重なった時に半透明のオブジェクトから不透明なオブジェクトが透けて見えない
 //　また、半透明なオブジェクトどうしであれば、カメラから距離が遠い順に先に描画する
 
+float Player::_invincible_timer;
+bool Player::_isInvincible;
 
 
 Player::Player(Shared<FreeLookCamera> camera_ref) {
@@ -20,9 +24,6 @@ Player::Player(Shared<FreeLookCamera> camera_ref) {
 	_mesh->scl_ = { 1.0f, 1.0f, 1.0f };
 	_mesh->pos_ = { 0, 100, -300 };
 
-	//　プレイヤー半透明化
-	_mesh->setBlendMode(DX_BLENDMODE_ADD);
-	_mesh->setAlpha(0.5f);
 
 	collide_size = { 20, 10, 10 };
 
@@ -33,14 +34,22 @@ Player::Player(Shared<FreeLookCamera> camera_ref) {
 }
 
 
-void Player::DecreaseHP(int damage) {
 
-	_hp -= damage;
+bool Player::DecreaseHP(int damage) {
 
-	if (_hp <= 0) {
+	if (_hp > 0) {
 
-		// ゲームオーバー処理
+		if (!_isInvincible) {
+			_hp -= damage;
+			return true;
+		}
+
+		return false;
 	}
+
+	// ゲームオーバー
+	_hp = 0;
+	return false;
 }
 
 
@@ -163,6 +172,22 @@ void Player::NormalizeCameraSpeed(const float speed) {
 }
 
 
+
+void Player::InvincibleTime(const float delta_time) {
+
+	if (_isInvincible) {
+		_invincible_timer += delta_time;
+
+		if (_invincible_timer >= _INVINCIBLE_TIME_LIMIT) {
+			_invincible_timer = 0.0f;
+			_isInvincible = false;
+
+		}
+	}
+}
+
+
+
 void Player::ControlRotationByPadOrMouse() {
 
 	// ゲームパッド
@@ -194,7 +219,6 @@ void Player::ControlRotationByPadOrMouse() {
 		rot_x_ *= tnl::Quaternion::RotationAxis(tnl::Vector3::Cross({ 0, 1, 0 }, forward), tnl::ToRadian(vel.y * 0.01f));
 	}
 }
-
 
 
 
@@ -264,6 +288,7 @@ void Player::RenderFollowPointer()
 		DrawCircleAA(screen_pos.x, screen_pos.y, 5, 10, GetColor(255, 0, 0), 1, 1);
 	}
 }
+
 
 
 bool Player::IsEnemyInCapturableRange() {
@@ -385,7 +410,6 @@ void Player::ActivateDarkSoulsCamera() {
 
 
 
-
 void Player::ControlCameraWithoutEnemyFocus()
 {
 	tnl::Vector3 player_pos = _mesh->pos_;
@@ -405,8 +429,6 @@ void Player::ControlCameraWithoutEnemyFocus()
 	// 追従ポインターOFF
 	_mainCamera_ref->isShowTargetPointer = false;
 }
-
-
 
 
 
@@ -443,7 +465,6 @@ void Player::AdjustPlayerVelocity() {
 		rot_xz_ = tnl::Quaternion::RotationAxis(tnl::Vector3::Cross(upper, { 0, 1, 0 }), -(angle * 0.2f));
 	}
 
-
 	// 最終的な姿勢
 	_mesh->rot_ = rot_y_ * rot_xz_;
 	// ControlRotationByMouse で上下視点も使用する場合は↓を使う
@@ -465,11 +486,11 @@ void Player::Update(float delta_time) {
 		_mainCamera_ref->follow = !_mainCamera_ref->follow;
 	}
 
-
 	_mainCamera_ref->Update(delta_time);
 
 	ShotPlayerBullet();
 
+	InvincibleTime(delta_time);
 
 	AdjustPlayerVelocity();
 
@@ -498,7 +519,20 @@ void Player::UpdateStraightBullet(float delta_time)
 
 void Player::Render(Shared<FreeLookCamera> camera) {
 
-	_mesh->render(camera);
+	if (_isInvincible) {
+
+		if (static_cast<int>(_invincible_timer * 10) % 3 == 0) {
+
+			//　プレイヤー半透明化
+			_mesh->setBlendMode(DX_BLENDMODE_ADD);
+			_mesh->setAlpha(0.8f);
+			_mesh->render(camera);
+		}
+	}
+	else {
+		_mesh->setBlendMode(DX_BLENDMODE_NOBLEND);
+		_mesh->render(camera);
+	}
 
 	DrawBoxAA(60, 50, 210, 65, GetColor(150, 150, 150), true);
 
