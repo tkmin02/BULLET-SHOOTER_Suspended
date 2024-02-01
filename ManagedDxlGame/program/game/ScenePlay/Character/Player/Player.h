@@ -1,72 +1,60 @@
 #pragma once
+#include <vector>
 #include "../../../DxLibEngine.h"
-#include "../../Character/Enemy/EnemyBase.h"
+#include "../../Character/Enemy/EnemyZakoBase.h"
+#include "../../Character/Enemy/EnemyBossBase.h"
 
 class PlayerBullet;
-class EnemyBase;
+class EnemyZakoBase;
+class EnemyBossBase;
 class FreeLookCamera;
 
 class Player
 {
 public:
 
-	enum class CameraPos {
+	Player() {}
 
-		DIR_RIGHT,
-		DIR_LEFT,
-		DIR_UP,
-		DIR_DOWN,
-	};
+	explicit Player(Shared<FreeLookCamera> camera_ref);
 
-    
-	Player(){}
-
-	Player(Shared<FreeLookCamera> camera_ref);
-
-
-	void Update(float delta_time);
-	void UpdateStraightBullet(float delta_time);
-	void Render(Shared<FreeLookCamera> playerCamera);
-
-	void MoveForward(const float deltaTime);
-
-	void ControlPlayerMove();
-	void ControlMainCameraPos(const CameraPos enum_camera_pos);
-	void NormalizeCameraSpeed();
-
-
-	void ShotPlayerBullet();
-
-	void AdjustPlayerVelocity();
-
-	void ControlRotationByMouse();
-
-	float GetDistanceToEnemy(const float& x, const float& y, const float& z);
-
-	float GetAngleBtw_PlayerAndEnemy(Shared<dxe::Mesh> enemy);
-
-	void ChangeTarget_ByMouseWheel();
-
-	void RenderFollowPointer();
-
-
-	void ActivateDarkSoulsCamera();
-
-	void ControlCameraWithoutEnemyFocus(tnl::Vector3& player_pos);
-
-	const tnl::Vector3 GetPos() const   { return _mesh->pos_; }
+	const tnl::Vector3 GetPos() const { return _mesh->pos_; }
 	void SetPos(const tnl::Vector3 pos) { _mesh->pos_ = pos; }
 
 	// 管理するエネミーのリストの参照用
-	void SetEnemiesListRef_ClassP(std::vector<Shared<EnemyBase>> enemy_list_ref);
+	void SetEnemyZakoListRef(const std::vector<Shared<EnemyZakoBase>>& enemy_list_ref);
+	void SetEnemyBossListRef(const std::vector<Shared<EnemyBossBase>>& enemyBoss_ref);
+	void EraseEnemyZakoListRef(Shared<EnemyZakoBase>& enemy_list_ref);
+	void EraseEnemyBossListRef(Shared<EnemyBossBase>& enemyBoss_ref);
+
+
+	// プレイヤーの実体はScenePlayクラスにある
 	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
 
+	void DecreaseHP(int damage);
 
-	const tnl::Vector3 GetTargetsScreenCoordinates(const float& x, const float& y, const float& z);
+	void Update(float delta_time);
+	void Render(Shared<FreeLookCamera> playerCamera);
 
 private:
 
+	// プレイヤー関係
+	void ControlPlayerMove(const float delta_time);
+	void AdjustPlayerVelocity();
+	void ControlRotationByPadOrMouse();
+	void RenderPlayerHp();
+
+	// 敵関係
+	const tnl::Vector3 GetTargetsScreenCoordinates(const float& x, const float& y, const float& z);
+	void ChangeTarget_ByMouseWheel();
+	void RenderFollowPointer();
 	bool IsEnemyInCapturableRange();
+
+	// カメラ関係
+	void ActivateDarkSoulsCamera();
+	void ControlCameraWithoutEnemyFocus();
+	void NormalizeCameraSpeed(const float speed);
+	void UpdateStraightBullet(float delta_time);
+	void ShotPlayerBullet();
 
 public:
 
@@ -77,20 +65,20 @@ public:
 
 private:
 
-	tnl::PointsLerp* points = nullptr;
-	std::vector<tnl::Vector3> positions;
-
 	Shared<Player> _player_ref = nullptr;
 	Shared<FreeLookCamera> _mainCamera_ref = nullptr;
 
-	Shared<EnemyBase> _enemy_ref = nullptr;
-	std::vector <Shared<EnemyBase>> _enemies_list_ref{};
+	Shared<EnemyZakoBase> _enemyZako_ref = nullptr;
+	Shared<EnemyBossBase> _enemyBoss_ref = nullptr;
+	std::vector<Shared<EnemyZakoBase>> _enemyZako_list_ref{};
+	std::vector<Shared<EnemyBossBase>> _enemyBoss_list_ref{};
 
-	int _hp{};
-	int  _enemy_index{};
+
+	int   _hp{};
+	int   _MAX_HP{};
+	int   _enemy_index{};
 	float _player_behind_cameraX{};
 
-	float _radius{};
 	float _forward_velocity = 1.0f;
 
 	bool _isDead{};
@@ -98,9 +86,7 @@ private:
 	float _invincibleTime = 1.5f;
 	float _invincibleRestTime{};
 
-	float moveSpeed = 0.4f;
-	float camera_pos_offset = 1.f;
-
+	float _moveSpeed = 0.4f;
 
 	float centroid_radius_ = 100; // 重心
 	float mass_ = 100;            // 質量
@@ -111,10 +97,4 @@ private:
 	tnl::Quaternion rot_y_{};
 	tnl::Quaternion rot_x_{};
 	tnl::Quaternion rot_xz_{};
-
-	tnl::Vector3 _camera_pivot{};
-
-	tnl::Vector3 targets_screen_coords{};
-	tnl::Vector3 distance_player_enemy{};
-	float        _delta_angle{};
 };
