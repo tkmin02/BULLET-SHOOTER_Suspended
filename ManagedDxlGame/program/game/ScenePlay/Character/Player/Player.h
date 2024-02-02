@@ -15,6 +15,7 @@ public:
 
 	// ÉvÉåÉCÉÑÅ[ä÷åW
 	void SetPlayerRef(Shared<Player> player_ref) { _player_ref = player_ref; }
+	void SetBombCount(const int count) { _current_bomb_stock_count = count; }
 	bool DecreaseHP(int damage);
 	const tnl::Vector3 GetPos() const { return _mesh->pos_; }
 	void SetPos(const tnl::Vector3 pos) { _mesh->pos_ = pos; }
@@ -36,6 +37,11 @@ private:
 	void ControlRotationByPadOrMouse();
 	void RenderPlayerHp();
 	void InvincibleTime(const float delta_time);
+	void ShotPlayerBullet();
+	void UseBomb();
+	void ValidateBombEffect();
+	void InvalidateBombEffect(const float delta_time);
+	void RenderBombRemainCount();
 
 	// ìGä÷åW
 	const tnl::Vector3 GetTargetsScreenCoordinates(const float& x, const float& y, const float& z);
@@ -48,12 +54,13 @@ private:
 	void ControlCameraWithoutEnemyFocus();
 	void NormalizeCameraSpeed(const float speed);
 	void UpdateStraightBullet(float delta_time);
-	void ShotPlayerBullet();
 
 public:
 
 	Shared<dxe::Mesh> _mesh = nullptr;
 	std::list<Shared<PlayerBullet>> _straight_bullets_p;
+
+	static Shared<dxe::Particle> _bomb_particle;
 
 private:
 
@@ -70,6 +77,7 @@ public:
 
 	tnl::Vector3 collide_size{};
 	static bool _isInvincible;
+	static int  _current_bomb_stock_count;
 
 private:
 
@@ -84,6 +92,8 @@ private:
 
 	static float _invincible_timer;
 	const float _INVINCIBLE_TIME_LIMIT = 3.0f;
+
+	static float _bomb_timer;
 
 	float _moveSpeed = 0.4f;
 

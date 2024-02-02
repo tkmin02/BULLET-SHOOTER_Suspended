@@ -13,14 +13,20 @@
 //　そうでないと、オブジェクトが重なった時に半透明のオブジェクトから不透明なオブジェクトが透けて見えない
 //　また、半透明なオブジェクトどうしであれば、カメラから距離が遠い順に先に描画する
 
+int Player::_current_bomb_stock_count;
+
 float Player::_invincible_timer;
 bool Player::_isInvincible;
+
+float Player::_bomb_timer;
+
+Shared<dxe::Particle> Player::_bomb_particle;
 
 
 Player::Player(Shared<FreeLookCamera> camera_ref) {
 
 	_mesh = dxe::Mesh::CreateSphereMV(20, 10, 10, false);
-	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/playerTexture.jpg"));
+	_mesh->setTexture(dxe::Texture::CreateFromFile("graphics/prismatic-star.png"));
 	_mesh->scl_ = { 1.0f, 1.0f, 1.0f };
 	_mesh->pos_ = { 0, 100, -300 };
 
@@ -30,6 +36,7 @@ Player::Player(Shared<FreeLookCamera> camera_ref) {
 	_hp = 100;
 	_MAX_HP = _hp;
 
+	_bomb_particle = std::make_shared<dxe::Particle>("particle/preset/bombEffect.bin");
 	_mainCamera_ref = camera_ref;
 }
 
@@ -159,16 +166,38 @@ void Player::ControlPlayerMove(const float delta_time) {
 }
 
 
+void Player::UseBomb() {
 
-void Player::NormalizeCameraSpeed(const float speed) {
+	// マウス中央　ゲームパッドの場合はバツボタン、もしくはAボタンなど
+	if (tnl::Input::IsMouseTrigger(eMouseTrigger::IN_MIDDLE) && _current_bomb_stock_count != 0 ||
+		tnl::Input::IsPadDownTrigger(ePad::KEY_0) && _current_bomb_stock_count != 0) {
 
-	tnl::Vector3 zero = { 0,0,0 };
-
-	if ((move_vel_ - zero).length() > 0.0f) {
-
-		// ベクトル正規化
-		move_vel_ = move_vel_.Normalize(move_vel_) * speed;
+		ScenePlay::_isRenderPlayersBombEffect = true;
+		_current_bomb_stock_count--;
 	}
+}
+
+
+void Player::InvalidateBombEffect(const float delta_time) {
+
+	if (ScenePlay::_isRenderPlayersBombEffect) {
+		_bomb_timer += delta_time;
+		ValidateBombEffect();
+
+		if (_bomb_timer > 3.0f) {
+			_bomb_timer = 0.0f;
+			ScenePlay::DeactivateAllEnemyBullets();
+			ScenePlay::_isRenderPlayersBombEffect = false;
+		}
+	}
+}
+
+
+
+void Player::RenderBombRemainCount() {
+
+	std::string s = std::to_string(_current_bomb_stock_count);
+	DrawFormatString(1100, 160, -1, "Bomb:%s", s.c_str());
 }
 
 
@@ -185,6 +214,20 @@ void Player::InvincibleTime(const float delta_time) {
 		}
 	}
 }
+
+void Player::NormalizeCameraSpeed(const float speed) {
+
+	tnl::Vector3 zero = { 0,0,0 };
+
+	if ((move_vel_ - zero).length() > 0.0f) {
+
+		// ベクトル正規化
+		move_vel_ = move_vel_.Normalize(move_vel_) * speed;
+	}
+}
+
+
+
 
 
 
@@ -475,28 +518,42 @@ void Player::AdjustPlayerVelocity() {
 
 void Player::Update(float delta_time) {
 
-	ControlPlayerMove(delta_time);
-
-	ActivateDarkSoulsCamera();
-
-	ControlCameraWithoutEnemyFocus();
-
-	// 右マウスが押されたら、カメラを敵に固定するフラグを反転
-	if (tnl::Input::IsMouseTrigger(eMouseTrigger::IN_RIGHT) && IsEnemyInCapturableRange()) {
+	// カメラを敵に固定するフラグを反転
+	// マウス右　ゲームパッドの場合はR1（RB)
+	if (tnl::Input::IsMouseTrigger(eMouseTrigger::IN_RIGHT) && IsEnemyInCapturableRange() ||
+		tnl::Input::IsPadDownTrigger(ePad::KEY_5) && IsEnemyInCapturableRange()) {
 		_mainCamera_ref->follow = !_mainCamera_ref->follow;
 	}
-
 	_mainCamera_ref->Update(delta_time);
 
-	ShotPlayerBullet();
+	ActivateDarkSoulsCamera();
+	ControlCameraWithoutEnemyFocus();
 
+
+	ControlPlayerMove(delta_time);
+	AdjustPlayerVelocity();
 	InvincibleTime(delta_time);
 
-	AdjustPlayerVelocity();
 
+	ShotPlayerBullet();
 	UpdateStraightBullet(delta_time);
+
+
+	UseBomb();
+	InvalidateBombEffect(delta_time);
 }
 
+
+void Player::ValidateBombEffect() {
+
+	float adaptRange = 200.f;
+		
+	float euclideanDistance = (_bomb_particle->getPosition() - _mesh->pos_).length();
+
+	if (euclideanDistance <= adaptRange) {
+		ScenePlay::DeactivateAllEnemyBullets();
+	}
+}
 
 
 void Player::UpdateStraightBullet(float delta_time)
@@ -540,6 +597,9 @@ void Player::Render(Shared<FreeLookCamera> camera) {
 	SetFontSize(16);
 	DrawString(30, 50, "HP:", -1);
 	SetFontSize(22);
+
+	// ボムの残数
+	RenderBombRemainCount();
 
 	for (auto blt : _straight_bullets_p) blt->Render(camera);
 }
