@@ -1,9 +1,10 @@
-#include <random>
-#include "BulletHell.h"
-#include "BulletHellFactory.h"
 #include "../../../Manager/Enemy/EnemyManager.h"
 #include "../../ScenePlay.h"
 #include "../../../DxLibEngine.h"
+#include "../../../Loader/CsvLoader.h"
+#include "EnemyBullet.h"
+#include "BulletHell.h"
+#include "BulletHellFactory.h"
 
 
 BulletHellFactory::BulletHellFactory() {
@@ -42,56 +43,48 @@ void BulletHellFactory::InitBulletHellInfo() {
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_Normal_Patchouli() {
 
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id_roundBullet = 0;
+	int id_everyDirBullet = 0;
 
 	// âÒì]ópÇÃíeê∂ê¨ (ç∂âÒì]Ç∆âEâÒì]ÇÃÇQéÌóﬁÇ™Ç†ÇÈÇ™ÅAÇ±Ç±Ç≈ÇÕëSÇƒÇìØéûÇ…ê∂ê¨Ç∑ÇÈÅj
 	for (int i = 0; i < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI; i++) {
 
 		// ãÖëÃ--------------------------------------------------------------------------------------------------------------------------
-		Shared<EnemyBullet> round_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 30.0f);
+		Shared<EnemyBullet> round_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 20.0f);
 
-		round_bullet->_angle = (2.0f * tnl::PI / _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI) * i;
-		round_bullet->_radius = 90.0f;
-
-		round_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x + round_bullet->_radius * cos(round_bullet->_angle);
-		round_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y;
-		round_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z + round_bullet->_radius * sin(round_bullet->_angle);
-
-		round_bullet->_id = ScenePlay::_bulletUniqueID_normal_patchouli++;
+		round_bullet->_id = id_roundBullet++;
 		round_bullet->_speed = 150.0f;
-		round_bullet->color = EnemyBullet::COLOR::Blue;
 		round_bullet->_isActive = true;
-		round_bullet->_movementsType = "Sphere.Round";
+		round_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_Blue;
 
 		enemyBullet.push_back(round_bullet);
+	}
+
+
+	for (int i = 0; i < _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI; i++) {
 
 		// ãÖëÃÇ∆àÍèèÇ…ìÆÇ≠åıê¸------------------------------------------------------------------------------------------------------------
 		Shared<EnemyBullet> round_bullet_beam = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Cylinder, EnemyBullet::COLOR::White, 500.f);
+		
 		round_bullet_beam->_angle = (2.0f * tnl::PI / _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI) * i;
-		round_bullet_beam->_radius = 90.0f;
-		
-		round_bullet_beam->_mesh->pos_.x = round_bullet->_mesh->pos_.x + round_bullet_beam->_radius * cos(round_bullet_beam->_angle);
-		round_bullet_beam->_mesh->pos_.y = round_bullet->_mesh->pos_.y;
-		round_bullet_beam->_mesh->pos_.z = (round_bullet->_mesh->pos_.z + 100) + round_bullet_beam->_radius * sin(round_bullet_beam->_angle);
-		
+
 		float pitch = tnl::PI / 2.0f;
 
-		float angle = atan2(round_bullet->_mesh->pos_.z - _firstBossSpawnPosition.z, round_bullet->_mesh->pos_.x - _firstBossSpawnPosition.x);
+		float angle = (2.0f * tnl::PI / _ROUND_BULLETCOUNT_T_NORMAL_PATCHOULI) * i;
 		float yaw = angle;
-
 		float roll = 0.f;
 
 		tnl::Quaternion rotation = tnl::Quaternion::RotationRollPitchYawFromVector({ pitch, yaw, roll });
 
 		round_bullet_beam->_mesh->rot_ = rotation;
 
-		round_bullet->_id = ScenePlay::_bulletUniqueID_normal_patchouli++;
+		round_bullet_beam->_id = id_roundBullet++;
 		round_bullet_beam->_speed = 150.0f;
-		round_bullet_beam->color = EnemyBullet::COLOR::White;
 		round_bullet_beam->_isActive = true;
-		round_bullet_beam->_movementsType = "Cylinder.Round";
+		round_bullet_beam->specificType = EnemyBullet::SPECIFICTYPE::Cylinder_Round_White;
 
 
-		enemyBullet.push_back(round_bullet_beam);		
+		enemyBullet.push_back(round_bullet_beam);
 	}
 
 
@@ -100,18 +93,10 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_Normal_Patc
 
 		Shared<EnemyBullet> every_direction_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::EmeraldGreen, 12.0f);
 
-		every_direction_bullet->_radius = 65.0f;
-		every_direction_bullet->_angle = (2.0f * tnl::PI / 16) * i;
-
-		every_direction_bullet->_mesh->pos_.x = every_direction_bullet->_radius * cos(every_direction_bullet->_angle);
-		every_direction_bullet->_mesh->pos_.y = every_direction_bullet->_mesh->pos_.y;
-		every_direction_bullet->_mesh->pos_.z = every_direction_bullet->_radius * sin(every_direction_bullet->_angle);
 		
-		every_direction_bullet->_id = ScenePlay::_bulletUniqueID_normal_patchouli++;
-		every_direction_bullet->color = EnemyBullet::COLOR::EmeraldGreen;
-		every_direction_bullet->_isActive = true;
-		every_direction_bullet->_movementsType = "Sphere.Straight";
-
+		every_direction_bullet->_id = id_everyDirBullet++;
+		every_direction_bullet->_isActive = false;
+		every_direction_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_EmeraldGreen;
 
 		enemyBullet.push_back(every_direction_bullet);
 	}
@@ -124,35 +109,28 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_Normal_Patc
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_MetalFatigue_Patchouli() {
 
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id = 0;
 
 	for (int i = 0; i < _EVERYDIRECTION_BULLETCOUNT_T_METALFATIGUE_PATCHOULI; i++) {
 
 		Shared<EnemyBullet> every_direction_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Yellow, 15.0f);
 
-		every_direction_bullet->_radius = 150.0f;
-		every_direction_bullet->_angle = (2.0f * tnl::PI / _EVERYDIRECTION_BULLETCOUNT_T_METALFATIGUE_PATCHOULI) * i;
 
-		every_direction_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x;
-		every_direction_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y;
-		every_direction_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z;
-
-		every_direction_bullet->_id = ScenePlay::_bulletUniqueID_metalFatigue_patchouli++;
-		every_direction_bullet->_mesh->pos_;
-		every_direction_bullet->color = EnemyBullet::COLOR::Yellow;
-		every_direction_bullet->_isActive = true;
-		every_direction_bullet->_movementsType = "Sphere.Round.Origin";
+		every_direction_bullet->_id = id++;
+		every_direction_bullet->_isActive = false;
+		every_direction_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_Yellow;
 
 		enemyBullet.push_back(every_direction_bullet);
 	}
 
 
 	Shared<EnemyBullet> split_one_into_eight_bullet_wave1;
-	//Shared<EnemyBullet> split_one_into_eight_bullet_wave2;
-	//Shared<EnemyBullet> split_one_into_eight_bullet_wave3;
+	Shared<EnemyBullet> split_one_into_eight_bullet_wave2;
+	Shared<EnemyBullet> split_one_into_eight_bullet_wave3;
 
-	InitSplitOneIntoEightBullet(_SPLITONE_INTOEIGHT_BULLETCOUNT_T_METALFATIGUE_PATCHOULI, split_one_into_eight_bullet_wave1, enemyBullet, "Sphere.Round.Wave1");
-	//InitSplitOneIntoEightBullet(split_one_into_eight_count, split_one_into_eight_bullet_wave2, enemyBullet, "Sphere.Round.Wave2");
-	//InitSplitOneIntoEightBullet(split_one_into_eight_count, split_one_into_eight_bullet_wave3, enemyBullet, "Sphere.Round.Wave3");
+	InitSplitOneIntoEightBullet(_SPLITONE_INTOEIGHT_BULLETCOUNT_T_METALFATIGUE_PATCHOULI, id, split_one_into_eight_bullet_wave1, enemyBullet, EnemyBullet::SPECIFICTYPE::Sphere_Round_Yellow);
+	//InitSplitOneIntoEightBullet(_SPLITONE_INTOEIGHT_BULLETCOUNT_T_METALFATIGUE_PATCHOULI, id, split_one_into_eight_bullet_wave2, enemyBullet, EnemyBullet::SPECIFICTYPE::Sphere_Round_Yellow);
+	//InitSplitOneIntoEightBullet(_SPLITONE_INTOEIGHT_BULLETCOUNT_T_METALFATIGUE_PATCHOULI, id, split_one_into_eight_bullet_wave3, enemyBullet, EnemyBullet::SPECIFICTYPE::Sphere_Round_Yellow);
 
 
 	return enemyBullet;
@@ -160,7 +138,7 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_MetalFatigu
 
 
 void BulletHellFactory::InitSplitOneIntoEightBullet(
-	int split_one_into_eight_wave, Shared<EnemyBullet>& split_one_into_eight_bullet, std::vector<Shared<EnemyBullet>>& enemyBullet, const std::string& wave)
+	int split_one_into_eight_wave, int id, Shared<EnemyBullet>& split_one_into_eight_bullet, std::vector<Shared<EnemyBullet>>& enemyBullet, EnemyBullet::SPECIFICTYPE wave)
 {
 	for (int i = 0; i < split_one_into_eight_wave; i++) {
 
@@ -169,14 +147,13 @@ void BulletHellFactory::InitSplitOneIntoEightBullet(
 		split_one_into_eight_bullet->_radius = 65.0f;
 		split_one_into_eight_bullet->_angle = (2.0f * tnl::PI / 8) * i;
 		
-		split_one_into_eight_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x + split_one_into_eight_bullet->_radius * cos(split_one_into_eight_bullet->_angle);
-		split_one_into_eight_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y + split_one_into_eight_bullet->_mesh->pos_.y;;
-		split_one_into_eight_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z + split_one_into_eight_bullet->_radius * sin(split_one_into_eight_bullet->_angle);
+		split_one_into_eight_bullet->_mesh->pos_.x = split_one_into_eight_bullet->_radius * cos(split_one_into_eight_bullet->_angle);
+		split_one_into_eight_bullet->_mesh->pos_.y = split_one_into_eight_bullet->_mesh->pos_.y;;
+		split_one_into_eight_bullet->_mesh->pos_.z = split_one_into_eight_bullet->_radius * sin(split_one_into_eight_bullet->_angle);
 		
-		split_one_into_eight_bullet->_id = i;
-		split_one_into_eight_bullet->color = EnemyBullet::COLOR::Yellow;
+		split_one_into_eight_bullet->_id = id++;
 		split_one_into_eight_bullet->_isActive = true;
-		split_one_into_eight_bullet->_movementsType = wave;
+		split_one_into_eight_bullet->specificType = wave;
 
 		enemyBullet.push_back(split_one_into_eight_bullet);
 	}
@@ -188,23 +165,16 @@ void BulletHellFactory::InitSplitOneIntoEightBullet(
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_SilentSerena_Patchouli() {
 
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id = 0;
 
 	// ëSï˚å¸òAéÀíe--------------------------------------------------------------------------------------------------------------------------
 	for (int i = 0; i < _CIRCLECONTIGUOUS_BULLETCOUNT_T_SILENTSERENA_PATCHOULI; i++) {
 
 		Shared<EnemyBullet> circle_contiguous_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::EmeraldGreen, 15.0f);
-
-		circle_contiguous_bullet->_radius = 150.0f;
-		circle_contiguous_bullet->_angle = (2.0f * tnl::PI / _CIRCLECONTIGUOUS_BULLETCOUNT_T_SILENTSERENA_PATCHOULI) * i;
 		
-		circle_contiguous_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x;
-		circle_contiguous_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y;
-		circle_contiguous_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z;
-		
-		circle_contiguous_bullet->_id = ScenePlay::_bulletUniqueID_silentSerena_patchouli++;
-		circle_contiguous_bullet->color = EnemyBullet::COLOR::Yellow;
-		circle_contiguous_bullet->_isActive = true;
-		circle_contiguous_bullet->_movementsType = "Sphere.Round";
+		circle_contiguous_bullet->_id = id++;
+		circle_contiguous_bullet->_isActive = false;
+		circle_contiguous_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_EmeraldGreen;
 
 		enemyBullet.push_back(circle_contiguous_bullet);
 	}
@@ -215,21 +185,10 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_SilentSeren
 
 		Shared<EnemyBullet> slowly_coming_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue,10.0f);
 
-		std::random_device rd;
-		std::mt19937 mt(rd());
 
-		std::uniform_real_distribution<float> dist_x(-180.0, 180.0);
-		std::uniform_real_distribution<float> dist_y(-50.0, 100.0);
-		std::uniform_real_distribution<float> dist_z(-180.0, 180.0);
-
-		slowly_coming_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x + dist_x(mt);
-		slowly_coming_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y + dist_y(mt);
-		slowly_coming_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z + dist_z(mt);
-
-		slowly_coming_bullet->_id = ScenePlay::_bulletUniqueID_silentSerena_patchouli++;
-		slowly_coming_bullet->color = EnemyBullet::COLOR::Blue;
-		slowly_coming_bullet->_isActive = true;
-		slowly_coming_bullet->_movementsType = "Sphere.RandomStraight";
+		slowly_coming_bullet->_id = id++;
+		slowly_coming_bullet->_isActive = false;
+		slowly_coming_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_RandomStraight_Blue;
 
 		enemyBullet.push_back(slowly_coming_bullet);
 	}
@@ -242,55 +201,61 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_SilentSeren
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_Normal_Cirno() {
 
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id = 0;
 
 	for (int i = 0; i < _STRAIGHTAPPROACH_BULLETCOUNT_T_NORMAL_CIRNO; i++) {
 
-		Shared<EnemyBullet> straight_approach_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::EmeraldGreen, 15.0f);
-
-		straight_approach_bullet->_radius = 150.0f;
-		straight_approach_bullet->_angle = (2.0f * tnl::PI / _STRAIGHTAPPROACH_BULLETCOUNT_T_NORMAL_CIRNO) * i;
+		Shared<EnemyBullet> straight_approach_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 15.0f);		
 		
-		straight_approach_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x;
-		straight_approach_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y;
-		straight_approach_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z;
-		
-		straight_approach_bullet->_id = ScenePlay::_bulletUniqueID_silentSerena_patchouli++;
-		straight_approach_bullet->color = EnemyBullet::COLOR::Yellow;
-		straight_approach_bullet->_isActive = true;
-		straight_approach_bullet->_movementsType = "Sphere.Round";
+		straight_approach_bullet->_id = id++;
+		straight_approach_bullet->_isActive = false;
+		straight_approach_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Straight_Blue;
 
 		enemyBullet.push_back(straight_approach_bullet);
 	}
 
-	for (int i = 0; i < _EVERYDIRECTION_BULLETCOUNT_T_Normal_CIRNO; i++) {
+	for (int i = 0; i < _EVERYDIRECTION_BULLETCOUNT_T_NORMAL_CIRNO; i++) {
 
-		Shared<EnemyBullet> every_direction_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Yellow, 15.0f);
+		Shared<EnemyBullet> every_direction_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 15.0f);
 
-		every_direction_bullet->_radius = 150.0f;
-		every_direction_bullet->_angle = (2.0f * tnl::PI / _EVERYDIRECTION_BULLETCOUNT_T_Normal_CIRNO) * i;
-
-		every_direction_bullet->_mesh->pos_.x = _firstBossSpawnPosition.x;
-		every_direction_bullet->_mesh->pos_.y = _firstBossSpawnPosition.y;
-		every_direction_bullet->_mesh->pos_.z = _firstBossSpawnPosition.z;
-
-		every_direction_bullet->_id = ScenePlay::_bulletUniqueID_metalFatigue_patchouli++;
-		every_direction_bullet->_mesh->pos_;
-		every_direction_bullet->color = EnemyBullet::COLOR::Yellow;
-		every_direction_bullet->_isActive = true;
-		every_direction_bullet->_movementsType = "Sphere.Round.Origin";
+		every_direction_bullet->_id = id++;
+		every_direction_bullet->_isActive = false;
+		every_direction_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_Blue;
 
 		enemyBullet.push_back(every_direction_bullet);
 	}
 
-
 	return enemyBullet;
-
 }
 
 
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_IcicleFall_Cirno() {
 
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id = 0;
+
+	for (int i = 0; i < _SHOTOUTERMOVEINNER_BULLETCOUNT_T_ICICLEFALL_CIRNO; i++) {
+
+		Shared<EnemyBullet> shotOuter_moveInner_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 15.0f);
+
+		shotOuter_moveInner_bullet->_id = id++;
+		shotOuter_moveInner_bullet->_isActive = false;
+		shotOuter_moveInner_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Straight_Blue;
+
+		enemyBullet.push_back(shotOuter_moveInner_bullet);
+	}
+
+	for (int i = 0; i < _LINEUPSTRAIGHTSHOT_BULLETCOUNT_T_ICICLEFALL_CIRNO; i++) {
+
+		Shared<EnemyBullet> lineUp_straight_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Yellow, 15.0f);
+
+		lineUp_straight_bullet->_id = id++;
+		lineUp_straight_bullet->_isActive = false;
+		lineUp_straight_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Straight_Yellow;
+
+		enemyBullet.push_back(lineUp_straight_bullet);
+	}
+
 	return enemyBullet;
 
 }
@@ -298,9 +263,57 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_IcicleFall_
 
 
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_PerfectFreeze() {
+
 	std::vector<Shared<EnemyBullet>> enemyBullet;
+	int id = 0;
+
+	// ëSï˚å¸òAéÀíe--------------------------------------------------------------------------------------------------------------------------
+	for (int i = 0; i < _CIRCLECONTIGUOUS_BULLETCOUNT_T_PERFECTFREEZE_CIRNO; i++) {
+
+		Shared<EnemyBullet> circle_contiguous_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::EmeraldGreen, 15.0f);
+
+		circle_contiguous_bullet->_id = id++;
+		circle_contiguous_bullet->_isActive = false;
+		circle_contiguous_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_Round_EmeraldGreen;
+
+		enemyBullet.push_back(circle_contiguous_bullet);
+	}
+
+
+	// 5óÒÇÃíºçsíeÇç∂Ç©ÇÁâEÇ÷çLÇ™ÇÈÇÊÇ§Ç…î≠éÀÅi1âÒÇ≈ëSÇƒï˙éÀÅj--------------------------------------------------------------------------------------------------------------------------
+	for (int i = 0; i < _EXPANDSTRAIGHTSHOT_BULLETCOUNT_T_PERFECTFREEZE_CIRNO; i++) {
+
+		Shared<EnemyBullet> expand_straight_bullet = std::make_shared<EnemyBullet>(EnemyBullet::SHAPE::Sphere, EnemyBullet::COLOR::Blue, 10.0f);
+
+		expand_straight_bullet->_id = id++;
+		expand_straight_bullet->_isActive = false;
+		expand_straight_bullet->specificType = EnemyBullet::SPECIFICTYPE::Sphere_RandomStraight_Blue;
+
+		enemyBullet.push_back(expand_straight_bullet);
+	}
+
 	return enemyBullet;
 }
+
+
+
+std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_Normal_Suwako() {
+
+	std::vector<Shared<EnemyBullet>> enemyBullet;
+
+	return enemyBullet;
+
+}
+
+
+std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_IronRingOfMoriya_Suwako() {
+
+	std::vector<Shared<EnemyBullet>> enemyBullet;
+
+	return enemyBullet;
+
+}
+
 
 
 std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm() {
@@ -317,6 +330,7 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell(const Bulle
 
 	switch (type)
 	{
+	// ÉpÉ`ÉÖÉäÅ[
 	case BulletHell::TYPE::Normal_Patchouli:
 		return CreateBulletHell_Normal_Patchouli();
 		break;
@@ -326,6 +340,7 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell(const Bulle
 	case BulletHell::TYPE::SilentSerena_Patchouli:
 		return CreateBulletHell_SilentSerena_Patchouli();
 		break;
+	// É`ÉãÉm
 	case BulletHell::TYPE::Normal_Cirno:
 		return CreateBulletHell_Normal_Cirno();
 		break;
@@ -334,6 +349,13 @@ std::vector<Shared<EnemyBullet>> BulletHellFactory::CreateBulletHell(const Bulle
 		break;
 	case BulletHell::TYPE::Perfect_Freeze_Cirno:
 		return CreateBulletHell_PerfectFreeze();
+		break;
+	// êzñKéq
+	case BulletHell::TYPE::Normal_Suwako:
+		return CreateBulletHell_Normal_Suwako();
+		break;
+	case BulletHell::TYPE::IronRingOfMoriya_Suwako:
+		return CreateBulletHell_IronRingOfMoriya_Suwako();
 		break;
 	case BulletHell::TYPE::KeroChan_StandsFirm_AgainstTheStorm_Suwako:
 		return CreateBulletHell_KeroChanStandsFirm_AgainstTheStorm();

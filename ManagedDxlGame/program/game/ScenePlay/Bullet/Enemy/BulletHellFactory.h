@@ -1,4 +1,5 @@
 #pragma once
+#include "../../../Loader/CsvLoader.h"
 
 class BulletHell;
 class EnemyManager;
@@ -14,7 +15,13 @@ constexpr int _CIRCLECONTIGUOUS_BULLETCOUNT_T_SILENTSERENA_PATCHOULI = 320;
 constexpr int _SLOWLYCOMING_BULLETCOUNT_T_SILENTSERENA_PATCHOULI = 50;
 // チルノ（ノーマル）
 constexpr int _STRAIGHTAPPROACH_BULLETCOUNT_T_NORMAL_CIRNO = 99;
-constexpr int _EVERYDIRECTION_BULLETCOUNT_T_Normal_CIRNO = 48;
+constexpr int _EVERYDIRECTION_BULLETCOUNT_T_NORMAL_CIRNO = 48;
+// チルノ（アイシクル・フォール）
+constexpr int _SHOTOUTERMOVEINNER_BULLETCOUNT_T_ICICLEFALL_CIRNO = 120;
+constexpr int _LINEUPSTRAIGHTSHOT_BULLETCOUNT_T_ICICLEFALL_CIRNO = 15;
+// チルノ（パーフェクト・フリーズ）
+constexpr int _CIRCLECONTIGUOUS_BULLETCOUNT_T_PERFECTFREEZE_CIRNO = 300;
+constexpr int _EXPANDSTRAIGHTSHOT_BULLETCOUNT_T_PERFECTFREEZE_CIRNO = 100;
 
 
 
@@ -65,7 +72,8 @@ private:
 	/// <param name="split_one_into_eight_WAVE1"></param>
 	/// <param name="split_one_into_eight_bullet"></param>
 	//// <param name="enemyBullet"></param>
-	void InitSplitOneIntoEightBullet(int split_one_into_eight_WAVE1, Shared<EnemyBullet>& split_one_into_eight_bullet, std::vector<Shared<EnemyBullet>>& enemyBullet, const std::string& wave);
+	void InitSplitOneIntoEightBullet(
+		int split_one_into_eight_WAVE1,int id ,Shared<EnemyBullet>& split_one_into_eight_bullet, std::vector<Shared<EnemyBullet>>& enemyBullet, EnemyBullet::SPECIFICTYPE wave);
 
 	// チルノ-------------------------------------------------------------------------------------------------------------------------
 	//// <summary>
@@ -100,6 +108,14 @@ private:
 	//// </summary>
 	std::vector<Shared<EnemyBullet>> CreateBulletHell_PerfectFreeze();
 
+	// 諏訪子-------------------------------------------------------------------------------------------------------------------------
+
+
+	std::vector<Shared<EnemyBullet>> CreateBulletHell_Normal_Suwako();
+
+
+	std::vector<Shared<EnemyBullet>> CreateBulletHell_IronRingOfMoriya_Suwako();
+
 	//// <summary>
 	//　※ (諏訪子専用)
 	//　1.上に向かって8way弾を撃つ
@@ -121,7 +137,4 @@ private:
 	BulletHellType_Info _sBltHell_suwako_info{};
 
 	std::unordered_map<int, BulletHellType_Info> _bulletHellData_map;
-
-	// 常に原点
-	tnl::Vector3 _firstBossSpawnPosition{ 0,0,0 };
 };

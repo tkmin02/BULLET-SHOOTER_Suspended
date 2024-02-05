@@ -3,6 +3,7 @@
 
 class BulletHellFactory;
 class ScenePlay;
+class Player;
 
 struct SpawnedBossBulletInfo {
 	tnl::Vector3 originPos;
@@ -19,7 +20,6 @@ class BulletHell : public EnemyBullet
 public:
 
 	enum class TYPE {
-
 		None,
 		// パチュリー
 		Normal_Patchouli,
@@ -30,13 +30,15 @@ public:
 		IcicleFall_Cirno,
 		Perfect_Freeze_Cirno,
 		// 諏訪子
+		Normal_Suwako,
+		IronRingOfMoriya_Suwako,
 		KeroChan_StandsFirm_AgainstTheStorm_Suwako,
 	};
 
 public:
 
 	BulletHell() {}
-	BulletHell(const Shared<dxe::Mesh>& bossMesh);
+	BulletHell(const Shared<dxe::Mesh>& bossMesh, const Shared<Player>& player);
 
 	// ステージ1ボス（パチュリー）-------------------------------------
 	void ShotBulletHell_Normal_Patchouli(const float& delta_time);
@@ -47,20 +49,25 @@ public:
 	void ShotBulletHell_IcicleFall_Cirno(const float& delta_time);
 	void ShotBulletHell_PerfectFreeze_Cirno(const float& delta_time);
 	// ステージ3ボス（諏訪子）---------------------------------------------
-	void ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm(const float& delta_time);
+	void ShotBulletHell_Normal_Suwako(const float& delta_time);
+	void ShotBulletHell_IronRingOfMoriya_Suwako(const float& delta_time);
+	void ShotBulletHell_KeroChanStandsFirm_AgainstTheStorm_Suwako(const float& delta_time);
 
 
 	// ---------------------------------------------
 
-	void CheckLifeTimeDistance(Shared<EnemyBullet>& it_bltHell);
+	void CheckLifeTimeDistance(Shared<EnemyBullet>& bullet, const tnl::Vector3& pos, const float limit_distance);
 
-	tnl::Vector3& GetCurrentBossPosition() { return _bossMesh_ref->pos_; }
-
+	const float& GetCurrentBulletMovedDistance(const Shared<EnemyBullet>& bullet);
 
 private:
 
 	const Shared<dxe::Mesh> _bossMesh_ref = nullptr;
 	std::map<int, Shared<EnemyBullet>> _bltHellsBlt_map;
+
+
+	// 遅延処理で使用するタイマー
+	static std::map<Shared<EnemyBullet>, float> bullet_timers;
 
 public:
 
